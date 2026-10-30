@@ -22,7 +22,7 @@ class TestReporter(unittest.TestCase):
 
             self.assertTrue(os.path.exists(json_p))
             self.assertTrue(os.path.exists(md_p))
-            self.assertIn("Starship TPS Karo Muayene ve Bakım Raporu", content)
+            self.assertIn("Starship TPS Tile Inspection and Maintenance Work Order", content)
 
 
 if __name__ == "__main__":

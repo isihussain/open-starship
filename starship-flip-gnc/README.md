@@ -1,36 +1,36 @@
 # starship-flip-gnc
 
-Starship yatay gövde düşüşünden (belly-flop) dikey inişe geçiş (landing flip) manevrasını modelleyen 3 serbestlik dereceli (3-DoF) yörünge optimizasyonu ve itki vektör kontrol (TVC) kütüphanesi.
+A 3-DoF trajectory optimization and thrust-vector control (TVC) library that models the SpaceX Starship landing flip maneuver from broadside belly-flop to vertical touchdown.
 
-Manevra, 3 adet Raptor 3 motorunun ateşlenmesi, 90 derecelik ani rotasyon torku, 2 motorlu yüksek ivmeli frenleme ve tek motorlu son temas yakımı aşamalarını fiziksel sınır şartlarıyla çözer.
+The numerical solver models three active flight regimes under physical actuator and throttle constraints: 3-engine flip rotation, 2-engine high-g deceleration, and single-engine terminal touchdown.
 
 ---
 
-## Matematiksel Model ve Dinamik Denklemler
+## Flight Dynamic Equations
 
-### 1. Öteleme Hareketi
-İtki vektörü gövde açısı $\theta$ ve gimbal sapması $\delta$ ile tanımlanır:
+### 1. Translational Dynamics
+The engine thrust vector direction is governed by vehicle pitch angle $\theta$ and engine nozzle gimbal deflection $\delta$:
 
 $$F_{T,x} = F_T \sin(\theta - \delta)$$
 
 $$F_{T,z} = F_T \cos(\theta - \delta)$$
 
-Toplam ivmeler yerçekimi ($g = 9.80665 \text{ m/s}^2$) ve aerodinamik kuvvetler ($F_{drag}, F_{lift}$) bileşkesinden hesaplanır:
+Net accelerations incorporate gravity ($g = 9.80665 \text{ m/s}^2$) and aerodynamic drag/lift forces:
 
 $$a_x = \frac{F_{T,x} + F_{aero,x}}{m(t)}, \quad a_z = \frac{F_{T,z} + F_{aero,z} - m(t)g}{m(t)}$$
 
-### 2. Dönme Dinamiği
-Motor gimbal mafsalı ağırlık merkezinin $19.0\text{ m}$ arkasındadır. Üretilen yunuslama (pitch) momenti:
+### 2. Rotational Dynamics
+The engine gimbal pivot is located $19.0\text{ m}$ aft of the vehicle center of mass. The resulting pitching torque is:
 
 $$M_{net} = -F_T \sin(\delta) \cdot r_{gimbal} - c_{rot} q_{dyn} A_{broad} L \omega$$
 
-Açısal ivme $\alpha_{ang} = M_{net} / I_{yy}$ formülüyle 4. mertebe Runge-Kutta (RK4) entegratörüne verilir.
+Angular acceleration $\alpha_{ang} = M_{net} / I_{yy}$ is integrated using a 4th-order Runge-Kutta (RK4) numerical scheme.
 
 ---
 
-## Kurulum
+## Installation
 
-Harici bağımlılık gerektirmez. Saf Python 3.9+ ile çalışır:
+Zero external C-compiler dependencies. Requires standard Python 3.9+:
 
 ```bash
 cd starship-flip-gnc
@@ -39,15 +39,15 @@ pip install -e .
 
 ---
 
-## Hızlı Başlangıç
+## Quickstart
 
-### Komut Satırından Simülasyon Çalıştırma
+### CLI Simulation
 
 ```bash
 python3 -m starship_flip_gnc.cli --altitude 500.0 --vz -70.0 --export-json telemetry.json --export-csv telemetry.csv
 ```
 
-### Python API Kullanımı
+### Python API
 
 ```python
 from starship_flip_gnc.models import StarshipVehicle, FlightState
@@ -61,16 +61,16 @@ logger = TelemetryLogger()
 initial_state = FlightState(z=500.0, vz=-70.0)
 result = optimizer.simulate(initial_state=initial_state, dt=0.02, logger=logger)
 
-print(f"Basari: {result.success}")
-print(f"Inis Suresi: {result.touchdown_time_s} s | Kalan Yakit: {result.propellant_remaining_kg} kg")
+print(f"Outcome: {'SUCCESS' if result.success else 'FAILED'}")
+print(f"Touchdown Time: {result.touchdown_time_s} s | Remaining Fuel: {result.propellant_remaining_kg} kg")
 
-# Telemetriyi disa aktar (starship-cryo-slosh ve starship-tps-vision girdi dosyasi)
+# Export flight telemetry for downstream slosh and TPS analysis
 logger.export_json("flight_telemetry.json")
 ```
 
 ---
 
-## Testleri Çalıştırma
+## Running Tests
 
 ```bash
 python3 -m unittest discover -s tests
@@ -78,9 +78,8 @@ python3 -m unittest discover -s tests
 
 ---
 
-## Sponsor ve Katkı
+## Contributing & Support
 
-Projeyi desteklemek ve geliştirmelere katkı sağlamak için:
-- **GitHub Sponsor:** [github.com/sponsors/isihussain](https://github.com/sponsors/isihussain)
+* **GitHub Sponsors:** [github.com/sponsors/isihussain](https://github.com/sponsors/isihussain)
 
-> **Geliştirici Notu:** Bu projeyi 3 yıldır yerel Git ortamımda geliştiriyorum. Açık kaynak olarak yayımlama kararım, başka dünyalarda kalıcı insan yerleşimleri ve koloniler kurulmasını destekleme amacımdan kaynaklanıyor.
+> **Developer Note:** I have developed this project over the past 3 years in my local Git environment. My decision to publish it as open source is driven by my commitment to supporting the establishment of permanent human colonies and settlements on other worlds.

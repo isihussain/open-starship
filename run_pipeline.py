@@ -41,7 +41,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 1: Flight Dynamics & Trajectory Optimization (starship-flip-gnc)
     # -------------------------------------------------------------------------
-    print("\n[1/3] Calistiriliyor: starship-flip-gnc (Inis Manevrasi Cozumu)...")
+    print("\n[1/3] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
     vehicle = StarshipVehicle(dry_mass=100_000.0, landing_propellant_mass=25_000.0)
     optimizer = TrajectoryOptimizer(vehicle=vehicle)
     gnc_logger = TelemetryLogger()
@@ -55,16 +55,16 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     gnc_logger.export_json(str(telem_json_path))
     gnc_logger.export_csv(str(telem_csv_path))
 
-    print(f"      -> Ucus Sonucu: {'BASARILI' if flight_result.success else 'BASARISIZ'}")
-    print(f"      -> Inis Suresi: {flight_result.touchdown_time_s} s")
-    print(f"      -> Son Dikey Hiz: {flight_result.final_velocity_z_mps} m/s | Yunuslama: {flight_result.final_pitch_deg} deg")
-    print(f"      -> Harcanan Yakit: {flight_result.propellant_used_kg} kg (Kalan: {flight_result.propellant_remaining_kg} kg)")
-    print(f"      -> Telemetri Kaydedildi: {telem_json_path} ({len(gnc_logger.records)} kayit)")
+    print(f"      -> Flight Outcome: {'SUCCESS' if flight_result.success else 'FAILED'}")
+    print(f"      -> Touchdown Time: {flight_result.touchdown_time_s} s")
+    print(f"      -> Terminal Vertical Velocity: {flight_result.final_velocity_z_mps} m/s | Pitch: {flight_result.final_pitch_deg} deg")
+    print(f"      -> Propellant Burned: {flight_result.propellant_used_kg} kg (Remaining: {flight_result.propellant_remaining_kg} kg)")
+    print(f"      -> Telemetry Saved: {telem_json_path} ({len(gnc_logger.records)} records)")
 
     # -------------------------------------------------------------------------
     # STEP 2: Cryogenic Slosh & Ullage Ingestion (starship-cryo-slosh)
     # -------------------------------------------------------------------------
-    print("\n[2/3] Calistiriliyor: starship-cryo-slosh (Header Tank Yakit Calkantisi)...")
+    print("\n[2/3] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
     assembly = HeaderTankAssembly.default_starship(with_baffles=True)
     slosh_sim = SloshSimulator(
         assembly=assembly,
@@ -78,17 +78,17 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
         import json
         json.dump([pt.to_dict() for pt in slosh_history], f, indent=2)
 
-    print(f"      -> Calkanti Risk Seviyesi: {slosh_result.risk_level}")
-    print(f"      -> LOX Gaz Alma: {'VAR' if slosh_result.lox_gas_ingestion_detected else 'YOK'} (Min Derinlik: {slosh_result.lox_min_submergence_m} m)")
-    print(f"      -> CH4 Gaz Alma: {'VAR' if slosh_result.ch4_gas_ingestion_detected else 'YOK'} (Min Derinlik: {slosh_result.ch4_min_submergence_m} m)")
-    print(f"      -> Tepe Bozulma Torku: {slosh_result.max_slosh_torque_nm} N*m")
-    print(f"      -> Tepe Ağırlık Merkezi Kayması: {slosh_result.max_com_shift_x_mm} mm")
-    print(f"      -> Calkanti Verisi Kaydedildi: {slosh_json_path}")
+    print(f"      -> Slosh Risk Level: {slosh_result.risk_level}")
+    print(f"      -> LOX Gas Ingestion: {'YES' if slosh_result.lox_gas_ingestion_detected else 'NO'} (Min Submergence: {slosh_result.lox_min_submergence_m} m)")
+    print(f"      -> CH4 Gas Ingestion: {'YES' if slosh_result.ch4_gas_ingestion_detected else 'NO'} (Min Submergence: {slosh_result.ch4_min_submergence_m} m)")
+    print(f"      -> Peak Disturbance Torque: {slosh_result.max_slosh_torque_nm} N*m")
+    print(f"      -> Peak Center-of-Mass Shift: {slosh_result.max_com_shift_x_mm} mm")
+    print(f"      -> Slosh Telemetry Saved: {slosh_json_path}")
 
     # -------------------------------------------------------------------------
     # STEP 3: TPS Tile Damage Inspection (starship-tps-vision)
     # -------------------------------------------------------------------------
-    print("\n[3/3] Calistiriliyor: starship-tps-vision (Isi Kalkani Karo Muayenesi)...")
+    print("\n[3/3] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
     risk_map = AerothermalRiskMap.from_telemetry(gnc_logger.records)
     generator = SyntheticTileGridGenerator(random_seed=42)
     observations = generator.generate_sector(num_tiles_axial=30, num_tiles_azimuthal=20, defect_rate=0.06)
@@ -101,16 +101,16 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     InspectionReporter.export_json(batch_result, str(tps_json_path))
     InspectionReporter.generate_markdown_report(batch_result, str(tps_md_path))
 
-    print(f"      -> Toplam Denetlenen Karo: {batch_result.total_inspected}")
-    print(f"      -> Saglam: {batch_result.intact_count} | Hasarli: {batch_result.defective_count}")
-    print(f"         - Eksik: {batch_result.missing_count} | Catlak: {batch_result.cracked_count}")
-    print(f"         - Kirik Kenar: {batch_result.chipped_count} | Genisleyen Bosluk: {batch_result.gap_expansion_count}")
-    print(f"      -> Acil Degisim Emri (Kritik): {batch_result.critical_replacements_required}")
-    print(f"      -> Is Emri Raporu Kaydedildi: {tps_md_path}")
+    print(f"      -> Total Inspected Tiles: {batch_result.total_inspected}")
+    print(f"      -> Intact: {batch_result.intact_count} | Defective: {batch_result.defective_count}")
+    print(f"         - Missing: {batch_result.missing_count} | Cracked: {batch_result.cracked_count}")
+    print(f"         - Chipped Edges: {batch_result.chipped_count} | Gap Expansions: {batch_result.gap_expansion_count}")
+    print(f"      -> Critical Replacements Required: {batch_result.critical_replacements_required}")
+    print(f"      -> Maintenance Work Order Saved: {tps_md_path}")
 
     print("\n================================================================")
-    print("       TUM FAZLAR BASARIYLA TAMAMLANDI VE BAGLANDI               ")
-    print(f"       Uretilen Ciktilar: {out_path.resolve()}")
+    print("      ALL PHASES COMPLETED AND INTEGRATED SUCCESSFULLY          ")
+    print(f"      Output Artifacts: {out_path.resolve()}")
     print("================================================================\n")
 
 

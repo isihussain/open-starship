@@ -1,37 +1,37 @@
 # starship-tps-vision
 
-Starship gövdesindeki 18.000'den fazla altıgen seramik termal koruma karosunun (TPS) uçuş sonrası muayenesini yapan, aerotermal uçuş yük haritasıyla hasarları önceliklendiren açık kaynak muayene hattı.
+An automated inspection and defect prioritization pipeline for the 18,000+ hexagonal ceramic Thermal Protection System (TPS) tiles on the Starship hull.
 
-Gövde üzerindeki eksik, çatlak, kenarı kırılmış karoları ve plazma sızıntısına yol açabilecek aralık genleşmelerini tespit ederek yer bakım ekipleri için acil parça değişim iş emirleri üretir.
+Fuses aerothermal flight loading maps with optical measurements to identify missing tiles, ceramic cracks, chipped borders, and plasma-leak gap expansions, generating prioritized maintenance work orders for launch turnaround crews.
 
 ---
 
-## Mimarisi ve Uçuş Verisi Köprüsü
+## Architecture & Flight Load Bridge
 
 ```
-[ starship-flip-gnc Telemetrisi ]
-             │ (Tepe Isı Akısı & Dinamik Basınç)
+[ starship-flip-gnc Telemetry ]
+             │ (Peak Heat Flux & Dynamic Pressure)
              ▼
    [ AerothermalRiskMap ]
-             │ (Gövde Bölgesel Risk Ağırlığı: w_risk)
+             │ (Hull Zonal Risk Multiplier: w_risk)
              ▼
-[ Kamera / Sensör Karo Gözlemleri ] ──> [ TileDefectDetector ]
+[ Camera / Sensor Tile Observations ] ──► [ TileDefectDetector ]
                                                 │
                                                 ▼
-                                    [ Sıralı Bakım İş Emri (JSON / MD) ]
+                                    [ Prioritized Work Order (Markdown/JSON) ]
 ```
 
-### Kusur Sınıflandırma Kriterleri:
-1. **MISSING_TILE:** Yüzey alanı kaybı $> \%80$ (karo tamamen kopmuş, paslanmaz çelik gövde açıkta).
-2. **CRACKED_TILE:** Çatlak uzunluğu $\ge 20.0\text{ mm}$ (seramik gövdede kırılma riski).
-3. **EXPANDED_GAP:** Karolar arası boşluk $> 4.5\text{ mm}$ (nominal $2.0\text{ mm}$, plazma sızıntı riski).
-4. **CHIPPED_EDGE:** Kenar/köşe kırığı (alan kaybı $\%6$ ile $\%20$ arası).
+### Defect Classification Rules:
+1. **MISSING_TILE:** Surface area loss $> 80\%$ (tile detached, stainless steel hull exposed).
+2. **CRACKED_TILE:** Transverse structural fracture length $\ge 20.0\text{ mm}$.
+3. **EXPANDED_GAP:** Inter-tile clearance $> 4.5\text{ mm}$ (nominal $2.0\text{ mm}$, plasma blow-through hazard).
+4. **CHIPPED_EDGE:** Corner/perimeter spallation ($6\%$ to $20\%$ surface area loss).
 
-Öncelik Skoru = $\text{Temel Şiddet} \times w_{risk}$. En yüksek termal ve akustik yüke maruz kalan burun ve kanatçık menteşe bölgelerindeki hasarlar bakım listesinde en üste alınır.
+Priority Score = $\text{Base Severity} \times w_{risk}$. Defects located in high convective heating (nose stagnation cap) or high acoustic vibration (flap hinges and engine skirt) zones receive prioritized scheduling.
 
 ---
 
-## Kurulum
+## Installation
 
 ```bash
 cd starship-tps-vision
@@ -40,13 +40,13 @@ pip install -e .
 
 ---
 
-## Hızlı Başlangıç
+## Quickstart
 
-### CLI Kullanımı
+### CLI Usage
 
 ```bash
 python3 -m starship_tps_vision.cli \
-  --telemetry /yol/telemetry.json \
+  --telemetry /path/to/telemetry.json \
   --tiles-axial 30 \
   --tiles-azimuthal 20 \
   --defect-rate 0.05 \
@@ -54,7 +54,7 @@ python3 -m starship_tps_vision.cli \
   --export-markdown tps_work_order.md
 ```
 
-### Python API Kullanımı
+### Python API
 
 ```python
 from starship_tps_vision.thermal_map import AerothermalRiskMap
@@ -62,27 +62,27 @@ from starship_tps_vision.synthetic import SyntheticTileGridGenerator
 from starship_tps_vision.detector import TileDefectDetector
 from starship_tps_vision.reporter import InspectionReporter
 
-# 1. Telemetriden aerotermal risk haritasini kur
+# 1. Initialize aerothermal risk map from flight loads
 risk_map = AerothermalRiskMap(peak_heat_flux_w_m2=150000.0, peak_q_dyn_pa=40000.0)
 
-# 2. Karo gozlemlerini al
+# 2. Acquire tile sensor observations
 generator = SyntheticTileGridGenerator()
 observations = generator.generate_sector(num_tiles_axial=20, num_tiles_azimuthal=15, defect_rate=0.08)
 
-# 3. Denetle ve onceliklendir
+# 3. Classify and rank maintenance priority
 detector = TileDefectDetector(risk_map=risk_map)
 batch = detector.inspect_batch(observations)
 
-print(f"Toplam Denetlenen: {batch.total_inspected}")
-print(f"Acil Degisim Gereken: {batch.critical_replacements_required}")
+print(f"Total Inspected: {batch.total_inspected}")
+print(f"Critical Replacements Required: {batch.critical_replacements_required}")
 
-# 4. Rapor uret
+# 4. Generate maintenance work order
 InspectionReporter.generate_markdown_report(batch, "work_order.md")
 ```
 
 ---
 
-## Testleri Çalıştırma
+## Running Tests
 
 ```bash
 python3 -m unittest discover -s tests
@@ -90,9 +90,8 @@ python3 -m unittest discover -s tests
 
 ---
 
-## Sponsor ve Katkı
+## Contributing & Support
 
-Projeyi desteklemek ve geliştirmelere katkı sağlamak için:
-- **GitHub Sponsor:** [github.com/sponsors/isihussain](https://github.com/sponsors/isihussain)
+* **GitHub Sponsors:** [github.com/sponsors/isihussain](https://github.com/sponsors/isihussain)
 
-> **Geliştirici Notu:** Bu projeyi 3 yıldır yerel Git ortamımda geliştiriyorum. Açık kaynak olarak yayımlama kararım, başka dünyalarda kalıcı insan yerleşimleri ve koloniler kurulmasını destekleme amacımdan kaynaklanıyor.
+> **Developer Note:** I have developed this project over the past 3 years in my local Git environment. My decision to publish it as open source is driven by my commitment to supporting the establishment of permanent human colonies and settlements on other worlds.
