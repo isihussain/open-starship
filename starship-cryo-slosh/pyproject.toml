@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "starship-cryo-slosh"
+version = "0.1.0"
+description = "Cryogenic propellant slosh dynamics and ullage gas ingestion simulator for Starship header tanks."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    { name = "Open Starship Contributors" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[project.scripts]
+starship-slosh = "starship_cryo_slosh.cli:main"
