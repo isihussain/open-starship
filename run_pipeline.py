@@ -5,10 +5,13 @@ Executes the unified data pipeline:
   1. starship-flip-gnc: Computes landing flip trajectory & writes flight telemetry.
   2. starship-cryo-slosh: Reads telemetry & simulates cryogenic propellant dynamics in header tanks.
   3. starship-tps-vision: Derives aerothermal risk map from flight loads & executes tile inspection.
+  4. Mechazilla Catch Solver: Evaluates chopstick arm capture kinematics at launch tower.
+  5. In-Space Cryogenic Transfer: Simulates orbital propellant delivery from Tanker to Depot.
 """
 
 import sys
 import os
+import json
 from pathlib import Path
 
 # Add child packages to Python path for seamless execution:
@@ -20,9 +23,11 @@ sys.path.insert(0, str(BASE_DIR / "starship-tps-vision"))
 from starship_flip_gnc.models import StarshipVehicle, FlightState
 from starship_flip_gnc.trajectory import TrajectoryOptimizer
 from starship_flip_gnc.telemetry import TelemetryLogger
+from starship_flip_gnc.catch_dynamics import MechazillaCatchSolver, CatchEnvelope
 
-from starship_cryo_slosh.tank import HeaderTankAssembly
+from starship_cryo_slosh.tank import HeaderTankAssembly, CryogenicFluid
 from starship_cryo_slosh.simulator import SloshSimulator
+from starship_cryo_slosh.orbital_transfer import OrbitalTransferSimulator
 
 from starship_tps_vision.thermal_map import AerothermalRiskMap
 from starship_tps_vision.synthetic import SyntheticTileGridGenerator
@@ -41,7 +46,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 1: Flight Dynamics & Trajectory Optimization (starship-flip-gnc)
     # -------------------------------------------------------------------------
-    print("\n[1/3] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
+    print("\n[1/5] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
     vehicle = StarshipVehicle(dry_mass=100_000.0, landing_propellant_mass=25_000.0)
     optimizer = TrajectoryOptimizer(vehicle=vehicle)
     gnc_logger = TelemetryLogger()
@@ -64,7 +69,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 2: Cryogenic Slosh & Ullage Ingestion (starship-cryo-slosh)
     # -------------------------------------------------------------------------
-    print("\n[2/3] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
+    print("\n[2/5] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
     assembly = HeaderTankAssembly.default_starship(with_baffles=True)
     slosh_sim = SloshSimulator(
         assembly=assembly,
@@ -75,7 +80,6 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     slosh_result, slosh_history = slosh_sim.simulate_telemetry(gnc_logger.records)
     slosh_json_path = out_path / "slosh_dynamics.json"
     with open(slosh_json_path, "w", encoding="utf-8") as f:
-        import json
         json.dump([pt.to_dict() for pt in slosh_history], f, indent=2)
 
     print(f"      -> Slosh Risk Level: {slosh_result.risk_level}")
@@ -88,7 +92,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 3: TPS Tile Damage Inspection (starship-tps-vision)
     # -------------------------------------------------------------------------
-    print("\n[3/3] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
+    print("\n[3/5] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
     risk_map = AerothermalRiskMap.from_telemetry(gnc_logger.records)
     generator = SyntheticTileGridGenerator(random_seed=42)
     observations = generator.generate_sector(num_tiles_axial=30, num_tiles_azimuthal=20, defect_rate=0.06)
@@ -108,9 +112,40 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     print(f"      -> Critical Replacements Required: {batch_result.critical_replacements_required}")
     print(f"      -> Maintenance Work Order Saved: {tps_md_path}")
 
+    # -------------------------------------------------------------------------
+    # STEP 4: Mechazilla Tower Catch Verification
+    # -------------------------------------------------------------------------
+    print("\n[4/5] Running: Mechazilla Chopstick Catch Solver...")
+    catch_solver = MechazillaCatchSolver()
+    catch_res = catch_solver.evaluate_capture(
+        x_m=0.12,
+        z_m=45.05,
+        vx_mps=0.04,
+        vz_mps=-0.28,
+        pitch_deg=0.5,
+        vehicle_mass_kg=vehicle.dry_mass + flight_result.propellant_remaining_kg,
+    )
+    print(f"      -> Chopstick Catch Status: {'SUCCESS' if catch_res.caught else 'ABORT'}")
+    print(f"      -> Lateral Error: {catch_res.lateral_error_m} m | Vertical Error: {catch_res.vertical_error_m} m")
+    print(f"      -> Contact Load: {catch_res.contact_impulse_n / 1e3:.1f} kN")
+    print(f"      -> Message: {catch_res.message}")
+
+    # -------------------------------------------------------------------------
+    # STEP 5: In-Space Cryogenic Propellant Transfer
+    # -------------------------------------------------------------------------
+    print("\n[5/5] Running: In-Space Cryogenic Propellant Transfer Simulator...")
+    transfer_sim = OrbitalTransferSimulator()
+    lox_fluid = CryogenicFluid.liquid_oxygen()
+    transfer_res = transfer_sim.simulate_transfer(fluid=lox_fluid, target_mass_kg=80_000.0)
+    print(f"      -> Transfer Status: {'SUCCESS' if transfer_res.success else 'FAILED'}")
+    print(f"      -> Delivered Mass: {transfer_res.mass_transferred_kg:.0f} kg in {transfer_res.duration_s / 60.0:.1f} min")
+    print(f"      -> Flow Rate: {transfer_res.average_flow_rate_kg_s:.1f} kg/s | Transfer Efficiency: {transfer_res.transfer_efficiency_percent:.2f}%")
+    print(f"      -> Settling Bond Number: {transfer_res.bond_number:.1f} (Settled: {transfer_res.is_fluid_settled})")
+
     print("\n================================================================")
     print("      ALL PHASES COMPLETED AND INTEGRATED SUCCESSFULLY          ")
     print(f"      Output Artifacts: {out_path.resolve()}")
+    print("      3D Visualizer: visualizer/index.html")
     print("================================================================\n")
 
 

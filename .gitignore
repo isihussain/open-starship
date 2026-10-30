@@ -7,4 +7,10 @@ build/
 .pytest_cache/
 pipeline_artifacts/
 test_artifacts/
+test_ci_artifacts/
 .DS_Store
+*.so
+*.dylib
+*.dll
+*.o
+*.a

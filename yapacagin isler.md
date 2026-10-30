@@ -1,6 +1,6 @@
 # Planned Work Items (Open-Starship Suite)
 
-This document tracks planned development phases and architecture milestones for the three interconnected Starship engineering packages.
+This document tracks planned development phases and architecture milestones for the Open-Starship suite.
 
 ---
 
@@ -34,8 +34,10 @@ This document tracks planned development phases and architecture milestones for 
 
 ---
 
-## Phase 4: End-to-End Orchestration & Public Release
-- [x] 4.1 Implement `run_pipeline.py` orchestrating the full flight -> slosh -> inspection pipeline.
-- [x] 4.2 Author root `README.md` with system architecture, Oxide integration, and GitHub Sponsors.
-- [x] 4.3 Run and verify complete test suite across all packages (22/22 unit tests passing).
-- [x] 4.4 Publish public repository to GitHub (`isihussain/open-starship`).
+## Phase 4: Extended Aerospace Capabilities & Ecosystem Upgrades
+- [x] 4.1 Mechazilla chopstick tower catch kinematics and contact impulse solver (`catch_dynamics.py`).
+- [x] 4.2 In-space cryogenic propellant transfer & microgravity RCS settling simulator (`orbital_transfer.py`).
+- [x] 4.3 Freestanding C99 flight dynamics kernel (`starship_core.c`) and Python FFI bridge (`native_bridge.py`).
+- [x] 4.4 Standalone interactive 3D WebGL flight & slosh browser visualizer (`visualizer/index.html`).
+- [x] 4.5 Multi-platform GitHub Actions CI/CD matrix across Python 3.9-3.12 (`.github/workflows/ci.yml`).
+- [x] 4.6 MIT License file and root README documentation with badges and Oxide ecosystem links.

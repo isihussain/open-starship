@@ -1,0 +1,46 @@
+name: Open-Starship CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Run starship-flip-gnc Unit Tests
+      run: |
+        cd starship-flip-gnc
+        python -m unittest discover -s tests
+
+    - name: Run starship-cryo-slosh Unit Tests
+      run: |
+        cd starship-cryo-slosh
+        python -m unittest discover -s tests
+
+    - name: Run starship-tps-vision Unit Tests
+      run: |
+        cd starship-tps-vision
+        python -m unittest discover -s tests
+
+    - name: Run End-to-End Orchestrator Pipeline
+      run: |
+        python run_pipeline.py test_ci_artifacts
+        ls -la test_ci_artifacts/

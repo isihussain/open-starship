@@ -6,6 +6,8 @@ from .models import StarshipVehicle, EngineCluster, FlightState
 from .aerodynamics import AerodynamicModel, Atmosphere
 from .trajectory import TrajectoryOptimizer, SimulationResult
 from .telemetry import TelemetryRecord, TelemetryLogger
+from .catch_dynamics import CatchEnvelope, CatchResult, MechazillaCatchSolver
+from .native_bridge import NativeFlightCoreBridge
 
 __all__ = [
     "StarshipVehicle",
@@ -17,4 +19,8 @@ __all__ = [
     "SimulationResult",
     "TelemetryRecord",
     "TelemetryLogger",
+    "CatchEnvelope",
+    "CatchResult",
+    "MechazillaCatchSolver",
+    "NativeFlightCoreBridge",
 ]

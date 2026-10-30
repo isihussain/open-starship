@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open-Starship 3D Flight & Slosh Visualizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #0b0e14;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid #1e293b;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .brand { font-size: 16px; font-weight: bold; letter-spacing: 1px; color: #38bdf8; }
+    .badge { background: #0369a1; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
+    #main-container {
+      position: relative;
+      flex: 1;
+      display: flex;
+    }
+    #canvas-container {
+      flex: 1;
+      height: 100%;
+      background: radial-gradient(circle at 50% 30%, #172554 0%, #030712 80%);
+    }
+    /* Side telemetry HUD */
+    #hud-panel {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 290px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 5;
+      backdrop-filter: blur(6px);
+    }
+    .hud-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .hud-label { color: #94a3b8; }
+    .hud-val { font-weight: 600; color: #f8fafc; font-family: monospace; }
+    .hud-val.alert { color: #ef4444; }
+    .hud-val.safe { color: #22c55e; }
+    /* Slosh Tank Cutaway Viewport */
+    #slosh-panel {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 240px;
+      height: 270px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      backdrop-filter: blur(6px);
+    }
+    #slosh-canvas { width: 180px; height: 180px; margin-top: 5px; }
+    /* Bottom Controls */
+    footer {
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid #1e293b;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      z-index: 10;
+    }
+    button, label.btn-file {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    button:hover, label.btn-file:hover { background: #334155; border-color: #94a3b8; }
+    button.active { background: #0284c7; border-color: #38bdf8; }
+    #scrubber { flex: 1; accent-color: #38bdf8; cursor: pointer; }
+    input[type="file"] { display: none; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <header>
+    <div style="display: flex; align-items: center;">
+      <span class="brand">OPEN-STARSHIP 3D</span>
+      <span class="badge">FLIGHT & SLOSH VIEWER</span>
+    </div>
+    <div style="font-size: 12px; color: #94a3b8;">
+      Telemetry Engine v0.1.0 | Mechazilla Catch Envelope Enabled
+    </div>
+  </header>
+
+  <div id="main-container">
+    <div id="canvas-container"></div>
+
+    <div id="hud-panel">
+      <div style="font-weight: bold; margin-bottom: 8px; color: #38bdf8; font-size: 13px;">FLIGHT TELEMETRY (3-DoF)</div>
+      <div class="hud-row"><span class="hud-label">Time:</span><span class="hud-val" id="val-time">0.00 s</span></div>
+      <div class="hud-row"><span class="hud-label">Altitude (z):</span><span class="hud-val" id="val-alt">500.0 m</span></div>
+      <div class="hud-row"><span class="hud-label">Downrange (x):</span><span class="hud-val" id="val-x">0.0 m</span></div>
+      <div class="hud-row"><span class="hud-label">Vertical Speed:</span><span class="hud-val" id="val-vz">-70.0 m/s</span></div>
+      <div class="hud-row"><span class="hud-label">Pitch Angle:</span><span class="hud-val" id="val-pitch">90.0°</span></div>
+      <div class="hud-row"><span class="hud-label">Pitch Rate:</span><span class="hud-val" id="val-omega">0.0 °/s</span></div>
+      <div class="hud-row"><span class="hud-label">Active Engines:</span><span class="hud-val" id="val-engines">3</span></div>
+      <div class="hud-row"><span class="hud-label">Engine Throttle:</span><span class="hud-val" id="val-throttle">80 %</span></div>
+      <div class="hud-row"><span class="hud-label">Gimbal Angle:</span><span class="hud-val" id="val-gimbal">0.0°</span></div>
+      <div class="hud-row"><span class="hud-label">Remaining Prop:</span><span class="hud-val" id="val-prop">25000 kg</span></div>
+      <div class="hud-row"><span class="hud-label">Dynamic Press:</span><span class="hud-val" id="val-q">2830 Pa</span></div>
+      <div class="hud-row"><span class="hud-label">Heat Flux:</span><span class="hud-val" id="val-heat">30.3 W/m²</span></div>
+      <div class="hud-row" style="margin-top: 6px; border-top: 1px solid #334155; padding-top: 6px;">
+        <span class="hud-label">Catch Envelope:</span><span class="hud-val safe" id="val-catch">STANDBY</span>
+      </div>
+    </div>
+
+    <div id="slosh-panel">
+      <div style="font-weight: bold; font-size: 11px; color: #38bdf8;">NOSE LOX HEADER TANK</div>
+      <canvas id="slosh-canvas" width="180" height="180"></canvas>
+      <div style="font-size: 11px; margin-top: 6px;" id="slosh-status" class="hud-val safe">SUBMERGED (OK)</div>
+      <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;" id="slosh-depth">Inlet Depth: 2.95 m</div>
+    </div>
+  </div>
+
+  <footer>
+    <button id="btn-play">Pause</button>
+    <button id="btn-reset">Reset</button>
+    <input type="range" id="scrubber" min="0" max="100" value="0" step="0.1">
+    <button class="btn-speed active" data-speed="1">1x</button>
+    <button class="btn-speed" data-speed="2">2x</button>
+    <button class="btn-speed" data-speed="5">5x</button>
+    <label class="btn-file">
+      Load JSON
+      <input type="file" id="file-input" accept=".json">
+    </label>
+  </footer>
+
+  <script>
+    // Procedural Starship Telemetry Generator (used if no custom JSON is loaded)
+    function generateBaselineTelemetry() {
+      const records = [];
+      const dt = 0.04;
+      const totalTime = 38.0;
+      let z = 500.0, x = 0.0, vz = -70.0, vx = 0.0, theta = 90.0, prop = 25000.0;
+      let slosh_phi = 0.0, lox_sub = 2.95;
+
+      for (let t = 0; t <= totalTime; t += dt) {
+        let throttle = 0.80, engines = 3, gimbal = 0.0;
+        if (t < 2.5) {
+          theta = 90.0 - (80.0 * (t / 2.5));
+          gimbal = 6.0 * Math.sin(t * 2.0);
+          slosh_phi = -15.0 * (t / 2.5);
+          lox_sub = 2.95 - Math.abs(slosh_phi) * 0.15;
+          engines = 3;
+        } else if (z > 25.0) {
+          theta = 10.0 * Math.exp(-(t - 2.5));
+          gimbal = 1.0 * Math.cos(t * 3.0);
+          slosh_phi = 5.0 * Math.cos(t * 3.0);
+          lox_sub = 2.2 + 0.3 * Math.cos(t * 2.5);
+          engines = 2;
+          vz = Math.max(-12.0, vz + 18.0 * dt);
+        } else {
+          theta = 0.0;
+          gimbal = 0.0;
+          engines = 1;
+          slosh_phi = 0.5 * Math.cos(t * 2.0);
+          lox_sub = 1.8;
+          vz = Math.max(-0.8, vz + 8.0 * dt);
+        }
+
+        z = Math.max(0.3, z + vz * dt);
+        prop = Math.max(9200.0, prop - engines * 280.0 * dt);
+
+        records.push({
+          time_s: t,
+          altitude_m: z,
+          downrange_m: x,
+          velocity_z_mps: vz,
+          velocity_x_mps: vx,
+          pitch_deg: theta,
+          pitch_rate_deg_s: (t < 2.5) ? -32.0 : 0.0,
+          throttle: throttle,
+          active_engines: engines,
+          gimbal_deg: gimbal,
+          remaining_prop_kg: prop,
+          dynamic_pressure_pa: Math.max(0, 2800 * (z / 500.0)),
+          heat_flux_w_m2: Math.max(0, 30.0 * (Math.abs(vz) / 70.0)),
+          lox_phi_deg: slosh_phi,
+          lox_submergence_m: lox_sub,
+          gas_ingestion: lox_sub < 0.15
+        });
+        if (z <= 0.35) break;
+      }
+      return records;
+    }
+
+    let telemetry = generateBaselineTelemetry();
+    let currentIndex = 0;
+    let isPlaying = true;
+    let playbackSpeed = 1.0;
+
+    // 3D Scene Initialization
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 2000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambientLight);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    sunLight.position.set(100, 300, 200);
+    scene.add(sunLight);
+
+    // Ground and Launch Mount
+    const gridHelper = new THREE.GridHelper(400, 40, 0x334155, 0x1e293b);
+    gridHelper.position.y = 0;
+    scene.add(gridHelper);
+
+    // Mechazilla Launch Tower & Chopsticks
+    const towerGeo = new THREE.BoxGeometry(10, 140, 10);
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.4 });
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.set(-18, 70, 0);
+    scene.add(tower);
+
+    const armGeo = new THREE.BoxGeometry(22, 2.5, 3);
+    const armMat = new THREE.MeshStandardMaterial({ color: 0x0284c7 });
+    const chopstickL = new THREE.Mesh(armGeo, armMat);
+    chopstickL.position.set(-5, 45, 6);
+    scene.add(chopstickL);
+    const chopstickR = new THREE.Mesh(armGeo, armMat);
+    chopstickR.position.set(-5, 45, -6);
+    scene.add(chopstickR);
+
+    // Starship 3D Model Group
+    const ship = new THREE.Group();
+    // Stainless Steel Body Cylinder (Length: 50m, Diameter: 9m, scale: 0.5)
+    const bodyGeo = new THREE.CylinderGeometry(2.25, 2.25, 25, 32);
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9, roughness: 0.2 });
+    const body = new THREE.Mesh(bodyGeo, steelMat);
+    ship.add(body);
+
+    // Nose Cone
+    const noseGeo = new THREE.ConeGeometry(2.25, 7.5, 32);
+    const nose = new THREE.Mesh(noseGeo, steelMat);
+    nose.position.y = 12.5 + 3.75;
+    ship.add(nose);
+
+    // Forward Flaps
+    const flapGeo = new THREE.BoxGeometry(0.3, 3.5, 1.8);
+    const flapMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+    const flapFwdL = new THREE.Mesh(flapGeo, flapMat);
+    flapFwdL.position.set(2.3, 14.0, 0);
+    ship.add(flapFwdL);
+
+    // Aft Flaps
+    const flapAftGeo = new THREE.BoxGeometry(0.4, 6.0, 3.0);
+    const flapAftL = new THREE.Mesh(flapAftGeo, flapMat);
+    flapAftL.position.set(2.3, -9.0, 0);
+    ship.add(flapAftL);
+
+    // Raptor Thrust Plume
+    const plumeGeo = new THREE.ConeGeometry(1.6, 8.0, 16);
+    const plumeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+    const plume = new THREE.Mesh(plumeGeo, plumeMat);
+    plume.rotation.x = Math.PI;
+    plume.position.y = -12.5 - 4.0;
+    ship.add(plume);
+
+    scene.add(ship);
+
+    camera.position.set(60, 60, 90);
+    camera.lookAt(0, 40, 0);
+
+    // 2D Slosh Tank Canvas
+    const sloshCanvas = document.getElementById('slosh-canvas');
+    const sCtx = sloshCanvas.getContext('2d');
+
+    function drawSloshTank(phi_deg, submergence_m, gas_ingestion) {
+      sCtx.clearRect(0, 0, 180, 180);
+      const cx = 90, cy = 90, r = 70;
+
+      // Tank outline:
+      sCtx.beginPath();
+      sCtx.arc(cx, cy, r, 0, 2 * Math.PI);
+      sCtx.strokeStyle = "#475569";
+      sCtx.lineWidth = 3;
+      sCtx.stroke();
+
+      // Fluid free-surface line (tilted by phi):
+      const rad = (phi_deg * Math.PI) / 180.0;
+      sCtx.save();
+      sCtx.beginPath();
+      sCtx.arc(cx, cy, r, 0, 2 * Math.PI);
+      sCtx.clip();
+
+      sCtx.translate(cx, cy);
+      sCtx.rotate(rad);
+      sCtx.fillStyle = "rgba(56, 189, 248, 0.45)";
+      sCtx.fillRect(-r, 0, 2 * r, r);
+      sCtx.restore();
+
+      // Suction Inlet at bottom:
+      sCtx.beginPath();
+      sCtx.arc(cx, cy + r - 8, 6, 0, 2 * Math.PI);
+      sCtx.fillStyle = gas_ingestion ? "#ef4444" : "#22c55e";
+      sCtx.fill();
+    }
+
+    // Animation & Update Loop
+    function updateHUD(rec) {
+      document.getElementById('val-time').innerText = rec.time_s.toFixed(2) + " s";
+      document.getElementById('val-alt').innerText = rec.altitude_m.toFixed(1) + " m";
+      document.getElementById('val-x').innerText = rec.downrange_m.toFixed(1) + " m";
+      document.getElementById('val-vz').innerText = rec.velocity_z_mps.toFixed(1) + " m/s";
+      document.getElementById('val-pitch').innerText = rec.pitch_deg.toFixed(1) + "°";
+      document.getElementById('val-omega').innerText = rec.pitch_rate_deg_s.toFixed(1) + " °/s";
+      document.getElementById('val-engines').innerText = rec.active_engines || 1;
+      document.getElementById('val-throttle').innerText = Math.round((rec.throttle || 0.8) * 100) + " %";
+      document.getElementById('val-gimbal').innerText = (rec.gimbal_deg || 0).toFixed(1) + "°";
+      document.getElementById('val-prop').innerText = Math.round(rec.remaining_prop_kg || 15000) + " kg";
+      document.getElementById('val-q').innerText = Math.round(rec.dynamic_pressure_pa || 0) + " Pa";
+      document.getElementById('val-heat').innerText = (rec.heat_flux_w_m2 || 0).toFixed(1) + " W/m²";
+
+      const catchEl = document.getElementById('val-catch');
+      if (rec.altitude_m <= 46.0 && rec.altitude_m >= 44.0 && Math.abs(rec.velocity_z_mps) < 0.4) {
+        catchEl.innerText = "CHOPSTICK CAPTURED!";
+        catchEl.className = "hud-val safe";
+      } else if (rec.altitude_m < 50.0) {
+        catchEl.innerText = "FINAL PIN ALIGNMENT";
+        catchEl.className = "hud-val alert";
+      } else {
+        catchEl.innerText = "STANDBY";
+        catchEl.className = "hud-val safe";
+      }
+
+      const sloshStatus = document.getElementById('slosh-status');
+      if (rec.gas_ingestion) {
+        sloshStatus.innerText = "GAS INGESTION HAZARD!";
+        sloshStatus.className = "hud-val alert";
+      } else {
+        sloshStatus.innerText = "SUBMERGED (OK)";
+        sloshStatus.className = "hud-val safe";
+      }
+      document.getElementById('slosh-depth').innerText = "Inlet Depth: " + (rec.lox_submergence_m || 2.0).toFixed(2) + " m";
+
+      drawSloshTank(rec.lox_phi_deg || 0, rec.lox_submergence_m || 2.0, rec.gas_ingestion);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (telemetry.length > 0) {
+        const rec = telemetry[currentIndex];
+
+        // Position 3D Ship (scaled 1:1 in height coordinates)
+        ship.position.y = rec.altitude_m * 0.25;
+        ship.position.x = rec.downrange_m * 0.25;
+
+        // Pitch Angle (90 deg belly-flop to 0 deg vertical)
+        const pitchRad = (rec.pitch_deg * Math.PI) / 180.0;
+        ship.rotation.z = -pitchRad;
+
+        // Plume scale according to active engines & throttle
+        const scale = (rec.active_engines || 1) * (rec.throttle || 0.8) * 0.4;
+        plume.scale.set(scale, scale, scale);
+        plume.visible = (rec.altitude_m > 0.4);
+
+        updateHUD(rec);
+
+        if (isPlaying) {
+          currentIndex += playbackSpeed;
+          if (currentIndex >= telemetry.length) currentIndex = telemetry.length - 1;
+          document.getElementById('scrubber').value = (currentIndex / (telemetry.length - 1)) * 100;
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // UI Event Handlers
+    const btnPlay = document.getElementById('btn-play');
+    btnPlay.addEventListener('click', () => {
+      isPlaying = !isPlaying;
+      btnPlay.innerText = isPlaying ? "Pause" : "Play";
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      currentIndex = 0;
+      document.getElementById('scrubber').value = 0;
+    });
+
+    document.getElementById('scrubber').addEventListener('input', (e) => {
+      currentIndex = Math.floor((e.target.value / 100) * (telemetry.length - 1));
+    });
+
+    document.querySelectorAll('.btn-speed').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        playbackSpeed = parseFloat(btn.dataset.speed);
+      });
+    });
+
+    // Custom Telemetry File Loading
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const raw = JSON.parse(event.target.result);
+          telemetry = raw.map(r => ({
+            time_s: r.time_s,
+            altitude_m: r.altitude_m,
+            downrange_m: r.downrange_m || 0.0,
+            velocity_z_mps: r.velocity_z_mps,
+            velocity_x_mps: r.velocity_x_mps || 0.0,
+            pitch_deg: r.pitch_deg,
+            pitch_rate_deg_s: r.pitch_rate_deg_s || 0.0,
+            throttle: r.throttle || 0.8,
+            active_engines: r.active_engines || ((r.time_s < 2.5) ? 3 : (r.altitude_m > 25 ? 2 : 1)),
+            gimbal_deg: r.gimbal_deg || 0.0,
+            remaining_prop_kg: r.remaining_prop_kg || 15000,
+            dynamic_pressure_pa: r.dynamic_pressure_pa || 0,
+            heat_flux_w_m2: r.heat_flux_w_m2 || 0,
+            lox_phi_deg: r.lox_phi_deg || 0,
+            lox_submergence_m: r.lox_submergence_m || 2.5,
+            gas_ingestion: r.lox_gas_ingestion || false
+          }));
+          currentIndex = 0;
+          document.getElementById('scrubber').value = 0;
+        } catch (err) {
+          alert("Error parsing JSON telemetry file: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+  </script>
+</body>
+</html>
