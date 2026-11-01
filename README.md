@@ -1,6 +1,7 @@
 # Open-Starship
 
 [![CI](https://github.com/isihussain/open-starship/actions/workflows/ci.yml/badge.svg)](https://github.com/isihussain/open-starship/actions/workflows/ci.yml)
+[![Live 3D Visualizer](https://img.shields.io/badge/Live%20Demo-3D%20Visualizer-38bdf8?style=flat-square&logo=google-chrome&logoColor=white)](https://isihussain.github.io/open-starship/)
 [![Tests](https://img.shields.io/badge/tests-29%20passed-22c55e.svg)](https://github.com/isihussain/open-starship)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-38bdf8.svg)](https://www.python.org)
 [![Compiler](https://img.shields.io/badge/verified%20by-Oxide%20C%2B%2B20-orange.svg)](https://github.com/isihussain/oxide-compiler)
