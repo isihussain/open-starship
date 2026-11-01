@@ -2,7 +2,7 @@
 starship-flip-gnc: Starship landing flip trajectory and guidance module.
 """
 
-from .models import StarshipVehicle, EngineCluster, FlightState
+from .models import StarshipVehicle, EngineCluster, FlightState, TVCActuator
 from .aerodynamics import AerodynamicModel, Atmosphere, WindModel
 from .trajectory import TrajectoryOptimizer, SimulationResult
 from .telemetry import TelemetryRecord, TelemetryLogger
@@ -13,6 +13,7 @@ __all__ = [
     "StarshipVehicle",
     "EngineCluster",
     "FlightState",
+    "TVCActuator",
     "AerodynamicModel",
     "Atmosphere",
     "WindModel",
