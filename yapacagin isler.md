@@ -65,3 +65,17 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 6.6 Standalone unit test suite (14 new tests in `starship-geo-sat/tests`, 69 tests passing total).
 - [x] 6.7 Pipeline orchestration integration as Step 7 emitting `pipeline_artifacts/geo_satellite_validation.json`.
 - [x] 6.8 Open and resolve dedicated GitHub issues (#17, #18, #19, #20, #21).
+
+---
+
+## Phase 7: Mission Control Visualizer (Full Overhaul)
+- [x] 7.1 Rebuild `visualizer/index.html` as a 5-tab mission control dashboard (1575 lines, zero external build dependencies).
+- [x] 7.2 Implement JS physics simulation mirroring `trajectory.py` exactly: 3-DoF RK4, TVC gimbal PD controller, propellant burn, barometric atmosphere, Sutton-Graves heat flux.
+- [x] 7.3 Implement LOX and CH4 slosh pendulum simulation in JS (natural frequency, damping, free-surface displacement, suction inlet submergence, gas ingestion threshold).
+- [x] 7.4 Add live mini line charts: altitude, vertical speed, LOX slosh angle, heat flux — rolling 150-sample window, 30 Hz update.
+- [x] 7.5 Add Safety Interlocks panel: live status grid (6 interlocks), incident reference library (all 5 CNSA/NewSpace incidents), multi-sensor altitude readouts.
+- [x] 7.6 Add GEO-SAT panel: all 5 Türksat subsystems — abort detector, inclined orbit, EOR spiral day counter, reaction wheel desat bars, transponder XPI/AUPC.
+- [x] 7.7 Add TPS panel: 6-zone hull thermal risk map (canvas), tile count summary by zone, live heat flux gauge.
+- [x] 7.8 Support JSON file loading from `run_pipeline.py` output (`pipeline_artifacts/flight_telemetry.json`) via drag-drop / file input.
+- [x] 7.9 Upgrade 3D scene: TPS tile detail on hull, 3 individual Raptor nozzle plumes, Mechazilla chopstick arm with catch pins, orbit camera toggle.
+- [x] 7.10 Add topbar status chips: mission clock, phase badge, slosh risk level, CI test count.

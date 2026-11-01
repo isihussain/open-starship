@@ -148,18 +148,25 @@ This single command executes:
 6. **Incident Safety Interlocks**: Validates hold-down breakaway cutoff, touchdown consensus, actuator jam reallocation, engine-out gimbal trim, and debris footprint geofencing to `pipeline_artifacts/incident_safety_validation.json`.
 7. **Geostationary Satellite Operations**: Validates upper-stage abort detection, inclined orbit tracking, electric orbit raising radiation damage, reaction wheel desaturation, and transponder interference protection to `pipeline_artifacts/geo_satellite_validation.json`.
 
-### 2. Launch 3D Flight & Slosh Visualizer
+### 2. Launch Mission Control Visualizer
 
-Open `visualizer/index.html` directly in any web browser:
+Open `visualizer/index.html` directly in any web browser — no build step, no server required:
 
 ```bash
 open visualizer/index.html
 ```
 
-* **Interactive 3D Starship Model**: Real-time rendering of pitch reorientation, engine gimbal deflection, and dynamic plume throttle.
-* **Launch Tower & Chopsticks**: Animated landing capture targeting the Mechazilla tower arms.
-* **Live Header Tank Cutaway**: Real-time liquid free-surface slosh angle and suction inlet submergence monitoring.
-* **Custom Telemetry Ingestion**: Load any generated `flight_telemetry.json` via the file picker.
+The visualizer has five tabs, each backed by a live JS simulation that mirrors the Python models exactly:
+
+| Tab | What it shows |
+|-----|---------------|
+| **Flight & GNC** | Three.js 3D scene with TPS tile hull detail, 3 individual Raptor nozzle plumes, Mechazilla chopstick arm with catch pins; live altitude / speed / heat flux HUD; mini charts for altitude and vertical speed |
+| **Cryo Slosh** | LOX and CH4 pendulum canvas cutaway; slosh angle chart; gas ingestion threshold indicator |
+| **Safety Interlocks** | Live status grid for all 6 interlocks (hold-down clamp, touchdown gate, actuator allocation, engine-out, IIP, AFTS); incident reference library for all 5 CNSA/NewSpace incidents |
+| **GEO-SAT** | All 5 Türksat subsystem displays: abort detector state machine, inclined-orbit AZ/EL tracker, EOR spiral day counter, reaction wheel desat momentum bars, transponder XPI/AUPC gauge |
+| **TPS Tiles** | 6-zone hull aerothermal risk map (canvas); tile count summary by zone and defect category; live heat flux chart |
+
+**Loading recorded pipeline data:** click "Load JSON" and select `pipeline_artifacts/flight_telemetry.json` produced by `run_pipeline.py`. The visualizer replaces its simulation with the recorded trace.
 
 ---
 

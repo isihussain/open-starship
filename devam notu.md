@@ -10,7 +10,8 @@ The suite models the primary physical, operational, and safety bottlenecks acros
 2. **starship-cryo-slosh:** Fluid free-surface sloshing, suction inlet gas ingestion in cryogenic header tanks, and orbital ship-to-ship propellant transfers.
 3. **starship-tps-vision:** Optical defect detection and aerothermal load prioritization for 18,000+ hexagonal ceramic heat shield tiles.
 4. **starship-geo-sat:** Geostationary satellite operations, electric orbit raising (EOR), zero-magnetic-field reaction wheel desaturation, and transponder payload protection derived from the Türksat satellite program (Türksat 1A through 6A).
-5. **visualizer:** Interactive 3D WebGL flight replay and real-time slosh cutaway app.
+5. **visualizer:** 5-tab mission control dashboard (Three.js 3D scene, live JS physics simulation, slosh pendulum, safety interlocks, GEO-SAT subsystems, TPS thermal map).
+   Open with `open visualizer/index.html` — or load `pipeline_artifacts/flight_telemetry.json` directly in the browser.
 
 ---
 
@@ -64,8 +65,12 @@ PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-g
 # Run the 7-phase end-to-end pipeline:
 python3 run_pipeline.py pipeline_artifacts
 
-# Open the 3D browser visualizer:
+# Open the 5-tab mission control visualizer:
 open visualizer/index.html
+# In the browser, use the tab bar to switch between:
+#   Flight & GNC | Cryo Slosh | Safety Interlocks | GEO-SAT | TPS Tiles
+# To load recorded pipeline data, click "Load JSON" in any tab and select:
+#   pipeline_artifacts/flight_telemetry.json
 ```
 
 ---
