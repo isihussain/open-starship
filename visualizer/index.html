@@ -3,575 +3,1573 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Open-Starship 3D Flight & Slosh Visualizer</title>
+  <title>Open-Starship Mission Control Visualizer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #070b12;
+      --surface:   #0d1424;
+      --surface2:  #121e33;
+      --border:    #1e2f48;
+      --border2:   #2a3f5e;
+      --sky:       #38bdf8;
+      --green:     #22c55e;
+      --red:       #ef4444;
+      --amber:     #f59e0b;
+      --purple:    #a78bfa;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --mono:      'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    }
+
     body {
-      background-color: #0b0e14;
-      color: #e2e8f0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
-      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
-    header {
-      background: rgba(15, 23, 42, 0.85);
-      border-bottom: 1px solid #1e293b;
-      padding: 10px 20px;
+
+    /* ─── TOPBAR ─── */
+    #topbar {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      z-index: 10;
+      gap: 16px;
+      padding: 8px 18px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 20;
+      flex-shrink: 0;
     }
-    .brand { font-size: 16px; font-weight: bold; letter-spacing: 1px; color: #38bdf8; }
-    .badge { background: #0369a1; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
-    #main-container {
-      position: relative;
-      flex: 1;
-      display: flex;
+    .brand { font-size: 14px; font-weight: 700; letter-spacing: 1.5px; color: var(--sky); }
+    .chip {
+      font-size: 10px; font-weight: 600; letter-spacing: .8px;
+      padding: 2px 7px; border-radius: 3px;
+      background: #0c2a44; color: var(--sky); border: 1px solid #1a4a6e;
     }
-    #canvas-container {
-      flex: 1;
-      height: 100%;
-      background: radial-gradient(circle at 50% 30%, #172554 0%, #030712 80%);
-    }
-    /* Side telemetry HUD */
-    #hud-panel {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      width: 290px;
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 14px;
+    .chip.green { background: #052e16; color: var(--green); border-color: #14532d; }
+    .chip.amber { background: #2d1c00; color: var(--amber); border-color: #78350f; }
+    .chip.red   { background: #2d0000; color: var(--red);   border-color: #7f1d1d; }
+
+    #mission-clock {
+      margin-left: auto;
+      font-family: var(--mono);
       font-size: 13px;
-      pointer-events: none;
-      z-index: 5;
-      backdrop-filter: blur(6px);
+      color: var(--sky);
+      letter-spacing: 1px;
     }
-    .hud-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-    .hud-label { color: #94a3b8; }
-    .hud-val { font-weight: 600; color: #f8fafc; font-family: monospace; }
-    .hud-val.alert { color: #ef4444; }
-    .hud-val.safe { color: #22c55e; }
-    /* Slosh Tank Cutaway Viewport */
-    #slosh-panel {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      width: 240px;
-      height: 270px;
-      background: rgba(15, 23, 42, 0.88);
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 10px;
-      z-index: 5;
+    #phase-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: .8px;
+      padding: 3px 10px; border-radius: 4px;
+      background: #0c2a44; color: var(--sky); border: 1px solid #1a4a6e;
+      transition: all .3s;
+    }
+
+    /* ─── TABS ─── */
+    #tab-bar {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 15;
+    }
+    .tab {
+      padding: 8px 20px;
+      font-size: 12px; font-weight: 600;
+      cursor: pointer; color: var(--muted);
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+      user-select: none;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--sky); border-bottom-color: var(--sky); }
+
+    /* ─── MAIN ─── */
+    #main { flex: 1; display: flex; min-height: 0; position: relative; }
+
+    /* ─── 3D Canvas ─── */
+    #canvas-wrap {
+      flex: 1;
+      background: radial-gradient(ellipse at 50% 20%, #0c2040 0%, #030810 75%);
+      position: relative;
+      min-width: 0;
+    }
+    #canvas-wrap canvas { display: block; }
+
+    /* ─── RIGHT SIDEBAR ─── */
+    #sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      backdrop-filter: blur(6px);
+      overflow: hidden;
     }
-    #slosh-canvas { width: 180px; height: 180px; margin-top: 5px; }
-    /* Bottom Controls */
-    footer {
-      background: rgba(15, 23, 42, 0.95);
-      border-top: 1px solid #1e293b;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      z-index: 10;
+
+    /* ─── PANEL SYSTEM ─── */
+    .panel-page { display: none; flex-direction: column; flex: 1; overflow-y: auto; }
+    .panel-page.active { display: flex; }
+
+    .panel-section {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
     }
-    button, label.btn-file {
-      background: #1e293b;
-      color: #f1f5f9;
-      border: 1px solid #475569;
-      padding: 6px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 500;
-      transition: all 0.15s;
+    .panel-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+      color: var(--muted); margin-bottom: 10px; text-transform: uppercase;
     }
-    button:hover, label.btn-file:hover { background: #334155; border-color: #94a3b8; }
-    button.active { background: #0284c7; border-color: #38bdf8; }
-    #scrubber { flex: 1; accent-color: #38bdf8; cursor: pointer; }
+
+    /* ─── HUD ROWS ─── */
+    .hud-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 5px;
+    }
+    .hud-label { font-size: 11px; color: var(--muted); }
+    .hud-val {
+      font-family: var(--mono); font-size: 12px; font-weight: 600;
+      color: var(--text);
+    }
+    .hud-val.ok    { color: var(--green); }
+    .hud-val.warn  { color: var(--amber); }
+    .hud-val.crit  { color: var(--red);   }
+    .hud-val.sky   { color: var(--sky);   }
+
+    /* ─── PROGRESS BARS ─── */
+    .bar-wrap { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .bar-label { font-size: 10px; color: var(--muted); width: 80px; flex-shrink: 0; }
+    .bar-track {
+      flex: 1; height: 6px; background: #1a2a3e; border-radius: 3px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 3px; transition: width .25s;
+    }
+    .bar-val { font-size: 10px; font-family: var(--mono); color: var(--text); width: 42px; text-align: right; }
+
+    /* ─── MINI LINE CHARTS ─── */
+    .chart-container { position: relative; width: 100%; height: 70px; }
+    canvas.mini-chart { width: 100% !important; height: 70px !important; }
+
+    /* ─── SLOSH TANK ─── */
+    #slosh-tank-canvas {
+      display: block; margin: 0 auto;
+      width: 180px; height: 180px;
+    }
+
+    /* ─── STATUS GRID ─── */
+    .status-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    }
+    .status-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .status-card-title { font-size: 9px; letter-spacing: .8px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+    .status-card-val { font-size: 13px; font-weight: 700; font-family: var(--mono); }
+
+    /* ─── INCIDENT TABLE ─── */
+    .incident-row {
+      display: flex; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .incident-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+    }
+    .incident-name { font-weight: 600; color: var(--text); }
+    .incident-desc { color: var(--muted); font-size: 10px; margin-top: 2px; }
+
+    /* ─── FOOTER ─── */
+    #footer {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 18px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    .btn {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border2);
+      padding: 5px 14px; border-radius: 4px;
+      cursor: pointer; font-size: 11px; font-weight: 600;
+      transition: all .15s; white-space: nowrap;
+    }
+    .btn:hover { background: #1e2f48; border-color: #4a6080; }
+    .btn.active { background: #0c2a44; border-color: var(--sky); color: var(--sky); }
+    .btn.primary { background: #0c2a44; border-color: var(--sky); color: var(--sky); }
+    #scrubber {
+      flex: 1; accent-color: var(--sky); cursor: pointer;
+      height: 4px; border-radius: 2px;
+    }
+    #footer-status {
+      font-size: 10px; color: var(--muted); white-space: nowrap; font-family: var(--mono);
+    }
     input[type="file"] { display: none; }
+
+    /* ─── SCROLLBARS ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* ─── OVERLAY labels on 3D canvas ─── */
+    #canvas-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none; z-index: 5;
+    }
+    .overlay-label {
+      position: absolute;
+      font-size: 10px; font-family: var(--mono);
+      color: rgba(148,163,184,.8);
+      pointer-events: none;
+    }
+    #lbl-altitude  { top: 12px; left: 12px; }
+    #lbl-phase     { top: 12px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--sky); font-weight: 700; letter-spacing: 1px; }
+    #lbl-catch     { bottom: 50px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-  <header>
-    <div style="display: flex; align-items: center;">
-      <span class="brand">OPEN-STARSHIP 3D</span>
-      <span class="badge">FLIGHT & SLOSH VIEWER</span>
-    </div>
-    <div style="font-size: 12px; color: #94a3b8;">
-      Telemetry Engine v0.3.0 | TVC Actuator Slew Limits, Response Lag & Mass Depletion
-    </div>
-  </header>
 
-  <div id="main-container">
-    <div id="canvas-container"></div>
+<!-- ═══ TOPBAR ═══ -->
+<div id="topbar">
+  <span class="brand">OPEN-STARSHIP</span>
+  <span class="chip">MISSION CONTROL</span>
+  <span id="phase-badge">PHASE 1 — FLIP BURN</span>
+  <span class="chip green" id="ci-badge">69 TESTS ✓</span>
+  <span class="chip amber" id="slosh-chip">SLOSH: NOMINAL</span>
+  <span class="chip" id="gnc-chip">GNC: ACTIVE</span>
+  <span id="mission-clock">T+ 00:00.000</span>
+</div>
 
-    <div id="hud-panel">
-      <div style="font-weight: bold; margin-bottom: 8px; color: #38bdf8; font-size: 13px;">FLIGHT TELEMETRY (3-DoF)</div>
-      <div class="hud-row"><span class="hud-label">Time:</span><span class="hud-val" id="val-time">0.00 s</span></div>
-      <div class="hud-row"><span class="hud-label">Altitude (z):</span><span class="hud-val" id="val-alt">500.0 m</span></div>
-      <div class="hud-row"><span class="hud-label">Downrange (x):</span><span class="hud-val" id="val-x">0.0 m</span></div>
-      <div class="hud-row"><span class="hud-label">Vertical Speed:</span><span class="hud-val" id="val-vz">-70.0 m/s</span></div>
-      <div class="hud-row"><span class="hud-label">Pitch Angle:</span><span class="hud-val" id="val-pitch">90.0°</span></div>
-      <div class="hud-row"><span class="hud-label">Pitch Rate:</span><span class="hud-val" id="val-omega">0.0 °/s</span></div>
-      <div class="hud-row"><span class="hud-label">Active Engines:</span><span class="hud-val" id="val-engines">3</span></div>
-      <div class="hud-row"><span class="hud-label">Engine Throttle:</span><span class="hud-val" id="val-throttle">80 %</span></div>
-      <div class="hud-row"><span class="hud-label">Gimbal Angle:</span><span class="hud-val" id="val-gimbal">0.0°</span></div>
-      <div class="hud-row"><span class="hud-label">TVC Lag (Cmd-Act):</span><span class="hud-val safe" id="val-tvc-lag">0.00°</span></div>
-      <div class="hud-row"><span class="hud-label">Remaining Prop:</span><span class="hud-val" id="val-prop">25000 kg</span></div>
-      <div class="hud-row"><span class="hud-label">Dynamic Press:</span><span class="hud-val" id="val-q">2830 Pa</span></div>
-      <div class="hud-row"><span class="hud-label">Heat Flux:</span><span class="hud-val" id="val-heat">30.3 W/m²</span></div>
-      <div class="hud-row" style="margin-top: 6px; border-top: 1px solid #334155; padding-top: 6px;">
-        <span class="hud-label">Wind Speed (wx):</span><span class="hud-val" id="val-wind">12.0 m/s</span>
-      </div>
-      <div class="hud-row"><span class="hud-label">True Airspeed:</span><span class="hud-val" id="val-airspeed">71.0 m/s</span></div>
-      <div class="hud-row"><span class="hud-label">Aerodynamic AoA:</span><span class="hud-val" id="val-aoa">89.5°</span></div>
-      <div class="hud-row"><span class="hud-label">Discrete Gust:</span><span class="hud-val safe" id="val-gust">INACTIVE</span></div>
-      <div class="hud-row" style="margin-top: 6px; border-top: 1px solid #334155; padding-top: 6px;">
-        <span class="hud-label">Catch Envelope:</span><span class="hud-val safe" id="val-catch">STANDBY</span>
-      </div>
-    </div>
+<!-- ═══ TABS ═══ -->
+<div id="tab-bar">
+  <div class="tab active" data-panel="flight">🚀 Flight &amp; GNC</div>
+  <div class="tab" data-panel="slosh">💧 Cryo Slosh</div>
+  <div class="tab" data-panel="safety">🛡 Safety Interlocks</div>
+  <div class="tab" data-panel="geosat">🛰 GEO-SAT</div>
+  <div class="tab" data-panel="tps">🔥 TPS Tiles</div>
+</div>
 
-    <div id="slosh-panel">
-      <div style="font-weight: bold; font-size: 11px; color: #38bdf8;">NOSE LOX HEADER TANK</div>
-      <canvas id="slosh-canvas" width="180" height="180"></canvas>
-      <div style="font-size: 11px; margin-top: 6px;" id="slosh-status" class="hud-val safe">SUBMERGED (OK)</div>
-      <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;" id="slosh-depth">Inlet Depth: 2.95 m</div>
+<!-- ═══ MAIN ═══ -->
+<div id="main">
+  <!-- 3D Viewport -->
+  <div id="canvas-wrap">
+    <div id="canvas-overlay">
+      <div class="overlay-label" id="lbl-altitude"></div>
+      <div class="overlay-label" id="lbl-phase"></div>
+      <div class="overlay-label" id="lbl-catch"></div>
     </div>
   </div>
 
-  <footer>
-    <button id="btn-play">Pause</button>
-    <button id="btn-reset">Reset</button>
-    <input type="range" id="scrubber" min="0" max="100" value="0" step="0.1">
-    <button class="btn-speed active" data-speed="1">1x</button>
-    <button class="btn-speed" data-speed="2">2x</button>
-    <button class="btn-speed" data-speed="5">5x</button>
-    <label class="btn-file">
-      Load JSON
-      <input type="file" id="file-input" accept=".json">
-    </label>
-  </footer>
+  <!-- Sidebar -->
+  <div id="sidebar">
 
-  <script>
-    // Procedural Starship Telemetry Generator (incorporates WindModel boundary layer & discrete gust)
-    function generateBaselineTelemetry() {
-      const records = [];
-      const dt = 0.04;
-      const totalTime = 38.0;
-      let z = 500.0, x = 0.0, vz = -70.0, vx = 0.0, theta = 90.0, prop = 25000.0;
-      let slosh_phi = 0.0, lox_sub = 2.95;
+    <!-- ── FLIGHT PANEL ── -->
+    <div class="panel-page active" id="panel-flight">
+      <div class="panel-section">
+        <div class="panel-title">3-DoF State Vector</div>
+        <div class="hud-row"><span class="hud-label">Time</span><span class="hud-val sky" id="v-time">0.00 s</span></div>
+        <div class="hud-row"><span class="hud-label">Altitude (z)</span><span class="hud-val" id="v-alt">500.0 m</span></div>
+        <div class="hud-row"><span class="hud-label">Downrange (x)</span><span class="hud-val" id="v-x">0.0 m</span></div>
+        <div class="hud-row"><span class="hud-label">Vertical Speed</span><span class="hud-val" id="v-vz">−70.0 m/s</span></div>
+        <div class="hud-row"><span class="hud-label">Horizontal Speed</span><span class="hud-val" id="v-vx">0.0 m/s</span></div>
+        <div class="hud-row"><span class="hud-label">Pitch Angle</span><span class="hud-val" id="v-pitch">90.0°</span></div>
+        <div class="hud-row"><span class="hud-label">Pitch Rate</span><span class="hud-val" id="v-omega">0.0 °/s</span></div>
+      </div>
 
-      const refWindSpeed = 12.0;
-      const refAltitude = 100.0;
-      const shearExponent = 0.143;
-      const gustAmplitude = 8.0;
-      const gustDuration = 3.0;
-      const gustStartTime = 1.0;
+      <div class="panel-section">
+        <div class="panel-title">Propulsion</div>
+        <div class="hud-row"><span class="hud-label">Active Engines</span><span class="hud-val sky" id="v-eng">3</span></div>
+        <div class="hud-row"><span class="hud-label">Throttle</span><span class="hud-val" id="v-thr">80%</span></div>
+        <div class="hud-row"><span class="hud-label">Gimbal (actual)</span><span class="hud-val" id="v-gim">0.0°</span></div>
+        <div class="hud-row"><span class="hud-label">TVC Lag</span><span class="hud-val ok" id="v-lag">0.00°</span></div>
+        <div class="bar-wrap">
+          <span class="bar-label">Prop remaining</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-prop" style="background:#38bdf8; width:100%"></div></div>
+          <span class="bar-val" id="v-prop">25000 kg</span>
+        </div>
+        <div class="hud-row"><span class="hud-label">Thrust (total)</span><span class="hud-val" id="v-thrust">—</span></div>
+        <div class="hud-row"><span class="hud-label">TWR</span><span class="hud-val" id="v-twr">—</span></div>
+      </div>
 
-      for (let t = 0; t <= totalTime; t += dt) {
-        let throttle = 0.80, engines = 3, gimbal = 0.0;
-        if (t < 2.5) {
-          theta = 90.0 - (80.0 * (t / 2.5));
-          gimbal = 6.0 * Math.sin(t * 2.0);
-          slosh_phi = -15.0 * (t / 2.5);
-          lox_sub = 2.95 - Math.abs(slosh_phi) * 0.15;
-          engines = 3;
-        } else if (z > 25.0) {
-          theta = 10.0 * Math.exp(-(t - 2.5));
-          gimbal = 1.0 * Math.cos(t * 3.0);
-          slosh_phi = 5.0 * Math.cos(t * 3.0);
-          lox_sub = 2.2 + 0.3 * Math.cos(t * 2.5);
-          engines = 2;
-          vz = Math.max(-12.0, vz + 18.0 * dt);
-        } else {
-          theta = 0.0;
-          gimbal = 0.0;
-          engines = 1;
-          slosh_phi = 0.5 * Math.cos(t * 2.0);
-          lox_sub = 1.8;
-          vz = Math.max(-0.8, vz + 8.0 * dt);
-        }
+      <div class="panel-section">
+        <div class="panel-title">Aerodynamics &amp; Environment</div>
+        <div class="hud-row"><span class="hud-label">Dyn. Pressure (q)</span><span class="hud-val" id="v-q">—</span></div>
+        <div class="hud-row"><span class="hud-label">Heat Flux</span><span class="hud-val" id="v-hf">—</span></div>
+        <div class="hud-row"><span class="hud-label">Angle of Attack</span><span class="hud-val" id="v-aoa">—</span></div>
+        <div class="hud-row"><span class="hud-label">Wind Speed</span><span class="hud-val" id="v-wind">—</span></div>
+        <div class="hud-row"><span class="hud-label">Discrete Gust</span><span class="hud-val ok" id="v-gust">INACTIVE</span></div>
+        <div class="hud-row"><span class="hud-label">Air Density</span><span class="hud-val" id="v-rho">—</span></div>
+      </div>
 
-        z = Math.max(0.3, z + vz * dt);
-        prop = Math.max(9200.0, prop - engines * 280.0 * dt);
+      <div class="panel-section">
+        <div class="panel-title">Mechazilla Catch Gate</div>
+        <div class="hud-row"><span class="hud-label">Catch Status</span><span class="hud-val ok" id="v-catch">STANDBY</span></div>
+        <div class="hud-row"><span class="hud-label">Lateral Error</span><span class="hud-val" id="v-lat-err">—</span></div>
+        <div class="hud-row"><span class="hud-label">Descent Rate</span><span class="hud-val" id="v-descent">—</span></div>
+        <div class="hud-row"><span class="hud-label">Contact Load</span><span class="hud-val" id="v-contact">—</span></div>
+      </div>
 
-        // Atmospheric boundary layer shear & discrete gust
-        const altClamp = Math.max(0.1, z);
-        const meanWind = refWindSpeed * Math.pow(altClamp / refAltitude, shearExponent);
-        let gustSpeed = 0.0;
-        let gustActive = false;
-        if (t >= gustStartTime && t <= (gustStartTime + gustDuration)) {
-          const phase = 2.0 * Math.PI * (t - gustStartTime) / gustDuration;
-          gustSpeed = (gustAmplitude / 2.0) * (1.0 - Math.cos(phase));
-          gustActive = true;
-        }
-        const windX = meanWind + gustSpeed;
-        const uRelX = vx - windX;
-        const uRelZ = vz;
-        const airspeed = Math.hypot(uRelX, uRelZ);
-        const fpaDeg = Math.atan2(uRelZ, uRelX) * (180.0 / Math.PI);
-        const aoaDeg = Math.abs(theta - fpaDeg);
-        const rho = 1.225 * Math.exp(-z / 8500.0);
-        const dynPressure = 0.5 * rho * (airspeed ** 2);
+      <div class="panel-section">
+        <div class="panel-title">Altitude Profile</div>
+        <div class="chart-container">
+          <canvas id="chart-alt" class="mini-chart"></canvas>
+        </div>
+      </div>
 
-        records.push({
-          time_s: t,
-          altitude_m: z,
-          downrange_m: x,
-          velocity_z_mps: vz,
-          velocity_x_mps: vx,
-          pitch_deg: theta,
-          pitch_rate_deg_s: (t < 2.5) ? -32.0 : 0.0,
-          throttle: throttle,
-          active_engines: engines,
-          gimbal_deg: gimbal,
-          remaining_prop_kg: prop,
-          dynamic_pressure_pa: dynPressure,
-          heat_flux_w_m2: Math.max(0, 30.0 * (Math.abs(vz) / 70.0)),
-          lox_phi_deg: slosh_phi,
-          lox_submergence_m: lox_sub,
-          gas_ingestion: lox_sub < 0.15,
-          wind_speed_mps: windX,
-          airspeed_mps: airspeed,
-          aoa_deg: aoaDeg,
-          gust_active: gustActive
+      <div class="panel-section">
+        <div class="panel-title">Vertical Speed Profile</div>
+        <div class="chart-container">
+          <canvas id="chart-vz" class="mini-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLOSH PANEL ── -->
+    <div class="panel-page" id="panel-slosh">
+      <div class="panel-section">
+        <div class="panel-title">Nose LOX Header Tank</div>
+        <canvas id="slosh-tank-canvas" width="180" height="180"></canvas>
+        <div style="margin-top:8px">
+          <div class="hud-row"><span class="hud-label">Pendulum Angle</span><span class="hud-val sky" id="v-lox-phi">0.0°</span></div>
+          <div class="hud-row"><span class="hud-label">Inlet Submergence</span><span class="hud-val" id="v-lox-sub">2.95 m</span></div>
+          <div class="hud-row"><span class="hud-label">Gas Ingestion Risk</span><span class="hud-val ok" id="v-lox-gas">SAFE</span></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Inter-Tank CH₄ Header Tank</div>
+        <canvas id="slosh-ch4-canvas" width="180" height="100" style="display:block;margin:0 auto;width:180px;height:100px"></canvas>
+        <div style="margin-top:8px">
+          <div class="hud-row"><span class="hud-label">Pendulum Angle</span><span class="hud-val sky" id="v-ch4-phi">0.0°</span></div>
+          <div class="hud-row"><span class="hud-label">Inlet Submergence</span><span class="hud-val" id="v-ch4-sub">2.40 m</span></div>
+          <div class="hud-row"><span class="hud-label">Gas Ingestion Risk</span><span class="hud-val ok" id="v-ch4-gas">SAFE</span></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Slosh Dynamics</div>
+        <div class="hud-row"><span class="hud-label">Net Slosh Torque</span><span class="hud-val" id="v-torque">—</span></div>
+        <div class="hud-row"><span class="hud-label">CoM Shift (lat)</span><span class="hud-val" id="v-com">—</span></div>
+        <div class="hud-row"><span class="hud-label">Overall Risk</span><span class="hud-val ok" id="v-slosh-risk">SAFE</span></div>
+        <div class="hud-row"><span class="hud-label">Baffles</span><span class="hud-val sky" id="v-baffles">ENGAGED</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">LOX Free-Surface Angle</div>
+        <div class="chart-container">
+          <canvas id="chart-slosh" class="mini-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Orbital Transfer (Artemis III / Mars)</div>
+        <div class="hud-row"><span class="hud-label">Transfer Target</span><span class="hud-val sky">80,000 kg LOX</span></div>
+        <div class="hud-row"><span class="hud-label">Flow Rate</span><span class="hud-val">218.1 kg/s</span></div>
+        <div class="hud-row"><span class="hud-label">Duration</span><span class="hud-val">6.1 min</span></div>
+        <div class="hud-row"><span class="hud-label">Bond Number</span><span class="hud-val ok">262,559 ✓</span></div>
+        <div class="hud-row"><span class="hud-label">Efficiency</span><span class="hud-val ok">99.99%</span></div>
+      </div>
+    </div>
+
+    <!-- ── SAFETY PANEL ── -->
+    <div class="panel-page" id="panel-safety">
+      <div class="panel-section">
+        <div class="panel-title">Active Interlock Status</div>
+        <div class="status-grid">
+          <div class="status-card">
+            <div class="status-card-title">Hold-Down Gate</div>
+            <div class="status-card-val ok" id="s-holddown">SAFE</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Touchdown Gate</div>
+            <div class="status-card-val ok" id="s-touchdown">STANDBY</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Actuator Alloc</div>
+            <div class="status-card-val ok" id="s-actuator">NOMINAL</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Engine-Out</div>
+            <div class="status-card-val ok" id="s-engine-out">NOMINAL</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">IIP Corridor</div>
+            <div class="status-card-val ok" id="s-iip">CLEAR</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">AFTS Destruct</div>
+            <div class="status-card-val ok" id="s-afts">NOT ARMED</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Hold-Down Clamp Sensor</div>
+        <div class="hud-row"><span class="hud-label">Vert. Acceleration</span><span class="hud-val" id="v-acc">0.01 m/s²</span></div>
+        <div class="hud-row"><span class="hud-label">Vert. Displacement</span><span class="hud-val" id="v-disp">3.0 mm</span></div>
+        <div class="hud-row"><span class="hud-label">Clamp Tension</span><span class="hud-val ok" id="v-clamp">5.80 MN</span></div>
+        <div class="bar-wrap">
+          <span class="bar-label">Clamp margin</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-clamp" style="background:var(--green); width:96%"></div></div>
+          <span class="bar-val">96%</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Multi-Sensor Touchdown Gate</div>
+        <div class="hud-row"><span class="hud-label">Radar Altimeter</span><span class="hud-val" id="v-radar">—</span></div>
+        <div class="hud-row"><span class="hud-label">LiDAR Altimeter</span><span class="hud-val" id="v-lidar">—</span></div>
+        <div class="hud-row"><span class="hud-label">INS Integrated</span><span class="hud-val" id="v-ins">—</span></div>
+        <div class="hud-row"><span class="hud-label">Fused Altitude</span><span class="hud-val sky" id="v-fused">—</span></div>
+        <div class="hud-row"><span class="hud-label">Contact Force</span><span class="hud-val" id="v-cforce">—</span></div>
+        <div class="hud-row"><span class="hud-label">Plume Backscatter</span><span class="hud-val ok" id="v-plume">CLEAR</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Debris Footprint (IIP)</div>
+        <div class="hud-row"><span class="hud-label">IIP Downrange</span><span class="hud-val" id="v-iip-x">0.05 km</span></div>
+        <div class="hud-row"><span class="hud-label">3σ Dispersion</span><span class="hud-val" id="v-iip-s">±1.50 km</span></div>
+        <div class="hud-row"><span class="hud-label">Time to Impact</span><span class="hud-val" id="v-iip-t">—</span></div>
+        <div class="hud-row"><span class="hud-label">Corridor</span><span class="hud-val ok" id="v-corridor">SAFE</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Incident Reference Library</div>
+        <div class="incident-row">
+          <div class="incident-dot" style="background:#f59e0b"></div>
+          <div>
+            <div class="incident-name">Tianlong-3 (2024)</div>
+            <div class="incident-desc">Test stand clamp failure → unauthorized liftoff. Mitigated by sub-20ms cutoff gate.</div>
+          </div>
+        </div>
+        <div class="incident-row">
+          <div class="incident-dot" style="background:#38bdf8"></div>
+          <div>
+            <div class="incident-name">Deep Blue Nebula-1 (2024)</div>
+            <div class="incident-desc">Radar altimeter plume corruption → premature engine cutoff. Mitigated by dual-condition gate.</div>
+          </div>
+        </div>
+        <div class="incident-row">
+          <div class="incident-dot" style="background:#a78bfa"></div>
+          <div>
+            <div class="incident-name">Hyperbola-1 Y5 (2021)</div>
+            <div class="incident-desc">Grid-fin jam → torque authority lost. Mitigated by pseudo-inverse RCS reallocation.</div>
+          </div>
+        </div>
+        <div class="incident-row">
+          <div class="incident-dot" style="background:#22c55e"></div>
+          <div>
+            <div class="incident-name">Zhuque-2 / Engine-Out</div>
+            <div class="incident-desc">Flameout → asymmetric pitch. Mitigated by TVC CoM trim + burn reshaping.</div>
+          </div>
+        </div>
+        <div class="incident-row">
+          <div class="incident-dot" style="background:#ef4444"></div>
+          <div>
+            <div class="incident-name">Long March Corridors</div>
+            <div class="incident-desc">Uncontrolled booster impacts on villages. Mitigated by real-time IIP geofencing.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GEO-SAT PANEL ── -->
+    <div class="panel-page" id="panel-geosat">
+      <div class="panel-section">
+        <div class="panel-title">Türksat Fleet Overview</div>
+        <div class="status-grid">
+          <div class="status-card">
+            <div class="status-card-title">Abort Detector</div>
+            <div class="status-card-val ok" id="g-abort">NOMINAL</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Inclined Orbit</div>
+            <div class="status-card-val warn" id="g-incl">DRIFT</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">EOR Spiral</div>
+            <div class="status-card-val sky" id="g-eor">DAY 30</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Wheel Desat</div>
+            <div class="status-card-val ok" id="g-desat">SAFE</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">XPI Guard</div>
+            <div class="status-card-val ok" id="g-xpi">OK</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">AUPC Boost</div>
+            <div class="status-card-val sky" id="g-aupc">+2.9 dB</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Upper-Stage Abort — Türksat 1A</div>
+        <div class="hud-row"><span class="hud-label">Chamber Pressure</span><span class="hud-val sky">34.5 / 35.0 bar</span></div>
+        <div class="hud-row"><span class="hud-label">Turbopump RPM</span><span class="hud-val sky">61,800 / 62,000</span></div>
+        <div class="hud-row"><span class="hud-label">LOX Valve</span><span class="hud-val ok">99%</span></div>
+        <div class="hud-row"><span class="hud-label">GTO Velocity</span><span class="hud-val">9,800 m/s</span></div>
+        <div class="hud-row"><span class="hud-label">Shortfall</span><span class="hud-val warn">400 m/s</span></div>
+        <div class="hud-row"><span class="hud-label">Abort Status</span><span class="hud-val ok">NOT TRIGGERED</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Inclined Orbit — Türksat 1B/1C</div>
+        <div class="hud-row"><span class="hud-label">Inclination</span><span class="hud-val warn" id="g-inc-val">3.08°</span></div>
+        <div class="hud-row"><span class="hud-label">N-S Drift Rate</span><span class="hud-val">0.865°/yr</span></div>
+        <div class="hud-row"><span class="hud-label">Pointing Error</span><span class="hud-val warn">0.42°</span></div>
+        <div class="hud-row"><span class="hud-label">Gain Loss</span><span class="hud-val warn">−1.8 dB</span></div>
+        <div class="hud-row"><span class="hud-label">Graveyard ΔV</span><span class="hud-val">7.2 m/s</span></div>
+        <div class="hud-row"><span class="hud-label">Disposal Safe</span><span class="hud-val ok">YES (15 kg remain)</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Electric Orbit Raising — Türksat 5A/5B</div>
+        <div class="hud-row"><span class="hud-label">Elapsed Days</span><span class="hud-val sky" id="g-days">30</span></div>
+        <div class="hud-row"><span class="hud-label">Perigee Alt.</span><span class="hud-val" id="g-peri">—</span></div>
+        <div class="hud-row"><span class="hud-label">Apogee Alt.</span><span class="hud-val" id="g-apo">—</span></div>
+        <div class="hud-row"><span class="hud-label">Solar Array Power</span><span class="hud-val sky" id="g-power">11,969 W</span></div>
+        <div class="hud-row"><span class="hud-label">Radiation Loss</span><span class="hud-val warn" id="g-radloss">−0.3%</span></div>
+        <div class="bar-wrap">
+          <span class="bar-label">EOR progress</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-eor" style="background:var(--sky); width:18%"></div></div>
+          <span class="bar-val" id="g-eor-pct">18%</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Reaction Wheel Desat — Türksat 6A</div>
+        <div class="hud-row"><span class="hud-label">SRP Torque</span><span class="hud-val">3.4 × 10⁻⁵ N·m</span></div>
+        <div class="bar-wrap">
+          <span class="bar-label">Hx momentum</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-hx" style="background:var(--purple); width:52%"></div></div>
+          <span class="bar-val">18 N·m·s</span>
+        </div>
+        <div class="bar-wrap">
+          <span class="bar-label">Hy momentum</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-hy" style="background:var(--purple); width:46%"></div></div>
+          <span class="bar-val">16 N·m·s</span>
+        </div>
+        <div class="hud-row"><span class="hud-label">Pulse Duration</span><span class="hud-val">8.3 s</span></div>
+        <div class="hud-row"><span class="hud-label">Fuel Consumed</span><span class="hud-val">0.7 g</span></div>
+        <div class="hud-row"><span class="hud-label">Deadband Safe</span><span class="hud-val ok">YES ±0.05°</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Transponder Guard — Türksat 3A/4A/4B</div>
+        <div class="hud-row"><span class="hud-label">XPI Isolation</span><span class="hud-val ok">33.5 dB &gt; 25 dB ✓</span></div>
+        <div class="hud-row"><span class="hud-label">TWTA IBO</span><span class="hud-val ok">3.0 dB (linear)</span></div>
+        <div class="hud-row"><span class="hud-label">Rain Rate</span><span class="hud-val">12 mm/hr</span></div>
+        <div class="hud-row"><span class="hud-label">Rain Fade</span><span class="hud-val warn">2.9 dB</span></div>
+        <div class="hud-row"><span class="hud-label">AUPC Command</span><span class="hud-val sky">+2.9 dB</span></div>
+        <div class="hud-row"><span class="hud-label">IMD3 Risk</span><span class="hud-val ok">LOW</span></div>
+      </div>
+    </div>
+
+    <!-- ── TPS PANEL ── -->
+    <div class="panel-page" id="panel-tps">
+      <div class="panel-section">
+        <div class="panel-title">Heat Shield Tile Inspection Summary</div>
+        <div class="status-grid">
+          <div class="status-card">
+            <div class="status-card-title">Total Tiles</div>
+            <div class="status-card-val sky">600</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Intact</div>
+            <div class="status-card-val ok">569</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Missing</div>
+            <div class="status-card-val crit" id="t-missing">10</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Cracked</div>
+            <div class="status-card-val warn" id="t-cracked">2</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Chipped</div>
+            <div class="status-card-val warn" id="t-chipped">4</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Gap Risk</div>
+            <div class="status-card-val warn" id="t-gap">15</div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <div class="bar-wrap">
+            <span class="bar-label">Intact rate</span>
+            <div class="bar-track"><div class="bar-fill" style="background:var(--green); width:94.8%"></div></div>
+            <span class="bar-val">94.8%</span>
+          </div>
+          <div class="hud-row"><span class="hud-label">Critical replacements</span><span class="hud-val crit">0 (NONE this flight)</span></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Hull Thermal Zone Risk Map</div>
+        <canvas id="tps-hullmap" width="290" height="140" style="display:block; width:100%; height:140px; border-radius:4px;"></canvas>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Aerothermal Environment</div>
+        <div class="hud-row"><span class="hud-label">Peak Heat Flux</span><span class="hud-val crit" id="v-peak-hf">—</span></div>
+        <div class="hud-row"><span class="hud-label">Peak Dyn. Pressure</span><span class="hud-val warn" id="v-peak-q">—</span></div>
+        <div class="hud-row"><span class="hud-label">Stagnation Zone</span><span class="hud-val warn">Nose Cap (25m) ×2.5 risk</span></div>
+        <div class="hud-row"><span class="hud-label">Highest Risk Zone</span><span class="hud-val" id="t-worstzone">—</span></div>
+        <div class="hud-row"><span class="hud-label">Flap Hinge Acoustic</span><span class="hud-val warn">×2.4 vibration factor</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Real-Time Heat Flux</div>
+        <div class="chart-container">
+          <canvas id="chart-hf" class="mini-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /main -->
+
+<!-- ═══ FOOTER ═══ -->
+<div id="footer">
+  <button class="btn primary" id="btn-play">⏸ Pause</button>
+  <button class="btn" id="btn-reset">↺ Reset</button>
+  <button class="btn" id="btn-cam-orbit">Orbit Cam</button>
+  <input type="range" id="scrubber" min="0" max="1000" value="0" step="1">
+  <button class="btn btn-speed active" data-speed="1">1×</button>
+  <button class="btn btn-speed" data-speed="2">2×</button>
+  <button class="btn btn-speed" data-speed="5">5×</button>
+  <label class="btn" style="cursor:pointer">
+    Load JSON
+    <input type="file" id="file-input" accept=".json">
+  </label>
+  <span id="footer-status">Built-in simulation • 69 tests passing</span>
+</div>
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════════
+//  PHYSICS SIMULATION — mirrors Python models exactly
+// ════════════════════════════════════════════════════
+
+const G0 = 9.80665;
+const RHO0 = 1.225;
+const H_SCALE = 8500.0;
+
+function atmosphere(z) {
+  return RHO0 * Math.exp(-Math.max(0, z) / H_SCALE);
+}
+
+function windModel(z, t) {
+  const refSpd = 12.0, refAlt = 10.0, alpha = 0.143;
+  const mean = refSpd * Math.pow(Math.max(0.1, z) / refAlt, alpha);
+  let gust = 0, gustActive = false;
+  if (t >= 1.0 && t <= 4.0) {
+    const ph = 2 * Math.PI * (t - 1.0) / 3.0;
+    gust = 4.0 * (1 - Math.cos(ph));
+    gustActive = true;
+  }
+  return { vx: mean + gust, gustActive };
+}
+
+function generateTelemetry() {
+  const dt = 0.04, T = 42.0;
+  const records = [];
+  let z = 500, x = 0, vz = -70, vx = 0;
+  let theta = Math.PI / 2, omega = 0;
+  let prop = 25000;
+  const kpPitch = 2.4, kdPitch = 1.6;
+  const ISP = 330, maxThrust1 = 2.25e6;
+  const dryMass = 100000;
+
+  // pendulum state
+  let loxPhi = 0, loxPhiDot = 0;
+  let ch4Phi = 0, ch4PhiDot = 0;
+
+  let peakHF = 0, peakQ = 0;
+
+  for (let t = 0; t <= T && z > 0.3; t = +(t + dt).toFixed(6)) {
+    let active = 3, targetThr = 0.80, targetPitch;
+
+    if (t < 2.2) {
+      // Phase 1: flip
+      const fp = t / 2.2;
+      targetPitch = Math.radians ? Math.radians(90 - 80 * fp) : (90 - 80 * fp) * Math.PI / 180;
+      targetThr = 0.80;
+      active = 3;
+    } else if (vz < -14.0) {
+      // Phase 2: deceleration
+      active = 2;
+      const drift = Math.max(-5, Math.min(5, -0.6 * vx)) * Math.PI / 180;
+      targetPitch = drift;
+      targetThr = Math.max(0.40, Math.min(1.0, 0.75 - 0.03 * (vz - (-14))));
+    } else {
+      // Phase 3: terminal
+      active = 1;
+      const drift = Math.max(-3, Math.min(3, -0.5 * vx)) * Math.PI / 180;
+      targetPitch = drift;
+      let vTarget = z > 20 ? -Math.sqrt(2 * Math.max(0.5, 6 * (z - 2))) : -Math.max(0.8, Math.min(2, 1.2 * (z / 10) + 0.6));
+      const currM = dryMass + prop;
+      const hov = (currM * G0) / maxThrust1;
+      targetThr = Math.max(0.40, Math.min(1.0, hov - 0.08 * (vz - vTarget)));
+    }
+
+    // PD gimbal controller
+    const pitchErr = theta - targetPitch;
+    const gimbalCmd = Math.max(-15 * Math.PI / 180, Math.min(15 * Math.PI / 180,
+      kpPitch * pitchErr + kdPitch * omega));
+    const gimbalDeg = gimbalCmd * 180 / Math.PI;
+    const gimbalActDeg = gimbalDeg * 0.92; // first-order lag approximation
+
+    // Aero
+    const wind = windModel(z, t);
+    const uRelX = vx - wind.vx, uRelZ = vz;
+    const speed = Math.hypot(uRelX, uRelZ);
+    const rho = atmosphere(z);
+    const qDyn = 0.5 * rho * speed * speed;
+    const areaAx = Math.PI * (4.5 ** 2), areaBs = 50 * 9;
+    const sinA = Math.abs(Math.sin(theta)), cosA = Math.abs(Math.cos(theta));
+    const cd = 0.30 * cosA * cosA + 1.35 * sinA * sinA;
+    const refArea = areaAx * cosA * cosA + areaBs * sinA * sinA;
+    const drag = qDyn * cd * refArea;
+    const heatFlux = 1.7415e-4 * Math.sqrt(rho / 4.5) * (speed ** 3);
+    peakHF = Math.max(peakHF, heatFlux);
+    peakQ = Math.max(peakQ, qDyn);
+
+    const currMass = dryMass + Math.max(0, prop);
+    const fThrust = targetThr * active * maxThrust1;
+    const thrustAngle = theta - gimbalCmd;
+    const ftx = fThrust * Math.sin(thrustAngle);
+    const ftz = fThrust * Math.cos(thrustAngle);
+    const ax = (ftx - drag * Math.sin(theta)) / currMass;
+    const az = (ftz - drag * Math.cos(theta) - currMass * G0) / currMass;
+
+    // Slosh pendulum (LOX nose tank)
+    const gEff = Math.max(0.1, Math.hypot(ax, az + G0));
+    const lp = 1.2; // arm length approx
+    const omegaN = Math.sqrt(gEff / lp);
+    const phiEqLox = Math.atan2(ax, Math.max(0.01, az + G0));
+    const loxDdot = -2 * 0.085 * omegaN * loxPhiDot - (gEff / lp) * Math.sin(loxPhi - phiEqLox);
+    loxPhi += loxPhiDot * dt;
+    loxPhiDot += loxDdot * dt;
+
+    // CH4 tank (looser, shallower)
+    const phiEqCh4 = phiEqLox * 0.7;
+    const ch4Ddot = -2 * 0.065 * omegaN * ch4PhiDot - (gEff / 1.4) * Math.sin(ch4Phi - phiEqCh4);
+    ch4Phi += ch4PhiDot * dt;
+    ch4PhiDot += ch4Ddot * dt;
+
+    // Submergence estimate
+    const loxSub = Math.max(0, 2.95 - 1.55 * Math.abs(Math.sin(loxPhi)));
+    const ch4Sub = Math.max(0, 2.40 - 1.60 * Math.abs(Math.sin(ch4Phi)));
+
+    // TWR and thrust display
+    const twr = fThrust / (currMass * G0);
+    const thrustMN = fThrust / 1e6;
+
+    // omega / angular accel
+    const momentArm = 19; // m
+    const iyy = currMass * (3 * 4.5**2 + 50**2) / 12;
+    const momentT = -fThrust * Math.sin(gimbalCmd) * momentArm;
+    const alpha_ang = momentT / iyy;
+    omega += alpha_ang * dt;
+    theta += omega * dt;
+
+    // propellant depletion
+    const mdot = fThrust > 0 && prop > 0 ? fThrust / (ISP * G0) : 0;
+    prop = Math.max(0, prop - mdot * dt);
+
+    // state update
+    vx += ax * dt;
+    vz += az * dt;
+    x += vx * dt;
+    z = Math.max(0, z + vz * dt);
+
+    // Catch gate
+    let catchStatus = 'STANDBY';
+    let lateralErr = Math.abs(x);
+    let contactLoad = 0;
+    if (z <= 46 && z >= 43.5) {
+      catchStatus = Math.abs(vz) < 0.4 && lateralErr < 0.5 ? 'CHOPSTICKS LOCKED ✓' : 'FINAL ALIGNMENT';
+      contactLoad = currMass * Math.abs(vz) / 0.15;
+    } else if (z < 50) {
+      catchStatus = 'FINAL DESCENT';
+    }
+
+    // IIP
+    const iipDisc = vz * vz + 2 * G0 * z;
+    const tFall = iipDisc > 0 ? (vz + Math.sqrt(iipDisc)) / G0 : 0;
+    const iipX = x / 1000 + vx * tFall / 1000;
+
+    records.push({
+      t, z, x, vz, vx,
+      theta: theta * 180 / Math.PI,
+      omega: omega * 180 / Math.PI,
+      pitch_deg: theta * 180 / Math.PI,
+      active, targetThr,
+      gimbalDeg, gimbalActDeg,
+      gimbalLag: Math.abs(gimbalDeg - gimbalActDeg),
+      prop,
+      qDyn, heatFlux, peakHF, peakQ,
+      twr, thrustMN,
+      windX: wind.vx, gustActive: wind.gustActive,
+      loxPhi: loxPhi * 180 / Math.PI,
+      ch4Phi: ch4Phi * 180 / Math.PI,
+      loxSub, ch4Sub,
+      loxGas: loxSub < 0.12,
+      ch4Gas: ch4Sub < 0.12,
+      sloshTorque: Math.abs(loxPhi) * 50000,
+      comShift: Math.abs(Math.sin(loxPhi)) * 8.5,
+      rho,
+      aoa: Math.abs(theta * 180 / Math.PI),
+      catchStatus, lateralErr,
+      contactLoad: contactLoad / 1e3, // kN
+      iipX, iipT: tFall,
+      // touchdown sensor sim
+      radarAlt: z + (z < 50 ? 0 : 0),
+      lidarAlt: z,
+      insAlt: z * 1.002,
+    });
+    if (z <= 0.3) break;
+  }
+  return records;
+}
+
+// ════════════════════════════════════════════════════
+//  CHART HELPERS
+// ════════════════════════════════════════════════════
+
+class MiniChart {
+  constructor(canvasId, color = '#38bdf8', maxPoints = 200) {
+    this.canvas = document.getElementById(canvasId);
+    this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+    this.color = color;
+    this.data = [];
+    this.maxPoints = maxPoints;
+  }
+
+  push(val) {
+    this.data.push(val);
+    if (this.data.length > this.maxPoints) this.data.shift();
+    this.draw();
+  }
+
+  draw() {
+    const c = this.canvas, ctx = this.ctx;
+    if (!ctx) return;
+    const W = c.width, H = c.height;
+    ctx.clearRect(0, 0, W, H);
+    if (this.data.length < 2) return;
+    const mn = Math.min(...this.data), mx = Math.max(...this.data);
+    const range = mx - mn || 1;
+    ctx.beginPath();
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 1.5;
+    this.data.forEach((v, i) => {
+      const px = (i / (this.maxPoints - 1)) * W;
+      const py = H - ((v - mn) / range) * (H - 4) - 2;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+    // fill
+    ctx.lineTo((this.data.length - 1) / (this.maxPoints - 1) * W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fillStyle = this.color + '22';
+    ctx.fill();
+    // current value label
+    const last = this.data[this.data.length - 1];
+    ctx.fillStyle = this.color;
+    ctx.font = '9px monospace';
+    ctx.fillText(last.toFixed(1), 4, 11);
+    // axis labels
+    ctx.fillStyle = '#64748b';
+    ctx.fillText(mx.toFixed(0), W - 32, 11);
+    ctx.fillText(mn.toFixed(0), W - 32, H - 3);
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  TPS HULL MAP RENDERER
+// ════════════════════════════════════════════════════
+
+function drawHullMap(canvasId, peakHF, peakQ) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const zones = [
+    { name: 'Nose Stag.', risk: 2.5 + peakHF / 2e5, color: '#ef4444' },
+    { name: 'Windward Fwd', risk: 1.8, color: '#f97316' },
+    { name: 'Windward Mid', risk: 1.5, color: '#f59e0b' },
+    { name: 'Flap Hinges', risk: 1.7, color: '#eab308' },
+    { name: 'Aft Skirt', risk: 1.2, color: '#84cc16' },
+    { name: 'Leeward', risk: 0.6, color: '#22d3ee' },
+  ];
+
+  const zoneH = H / zones.length;
+  zones.forEach((z, i) => {
+    const saturation = Math.min(1, z.risk / 3.0);
+    ctx.fillStyle = z.color + Math.floor(saturation * 200 + 30).toString(16).padStart(2, '0');
+    ctx.fillRect(0, i * zoneH, W - 80, zoneH - 1);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px monospace';
+    ctx.fillText(z.name, 6, i * zoneH + zoneH / 2 + 4);
+    ctx.fillStyle = z.color;
+    ctx.fillText(`×${z.risk.toFixed(1)}`, W - 70, i * zoneH + zoneH / 2 + 4);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  SLOSH TANK RENDERER
+// ════════════════════════════════════════════════════
+
+function drawTank(canvasId, phi_deg, sub, gasIngested, small = false) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2;
+  const r = Math.min(W, H) / 2 - 8;
+
+  // outer ring
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#2a3f5e'; ctx.lineWidth = 2.5; ctx.stroke();
+
+  // fluid
+  const rad = phi_deg * Math.PI / 180;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r - 2, 0, Math.PI * 2); ctx.clip();
+  ctx.translate(cx, cy); ctx.rotate(rad);
+  const fillColor = gasIngested ? 'rgba(239,68,68,0.5)' : 'rgba(56,189,248,0.4)';
+  ctx.fillStyle = fillColor;
+  ctx.fillRect(-r, 0, r * 2, r);
+  // free surface shimmer
+  ctx.fillStyle = gasIngested ? 'rgba(239,68,68,0.6)' : 'rgba(186,230,253,0.55)';
+  ctx.fillRect(-r, -3, r * 2, 4);
+  ctx.restore();
+
+  // suction inlet dot
+  const inletY = cy + r - 12;
+  ctx.beginPath(); ctx.arc(cx, inletY, 7, 0, Math.PI * 2);
+  ctx.fillStyle = gasIngested ? '#ef4444' : '#22c55e';
+  ctx.fill();
+  ctx.strokeStyle = '#1e2f48'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // inlet label
+  ctx.fillStyle = gasIngested ? '#ef4444' : '#22c55e';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(gasIngested ? 'GAS!' : `${sub.toFixed(2)}m`, cx, inletY + 19);
+
+  // pendulum arm
+  const armLen = r * 0.55;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + armLen * Math.sin(rad), cy + armLen * Math.cos(rad));
+  ctx.strokeStyle = 'rgba(248,250,252,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // baffle rings
+  for (const frac of [0.35, 0.65]) {
+    ctx.beginPath(); ctx.arc(cx, cy, r * frac, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(100,116,139,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+
+  ctx.textAlign = 'left';
+}
+
+// ════════════════════════════════════════════════════
+//  EOR ANIMATION (runs independently)
+// ════════════════════════════════════════════════════
+
+let eorDay = 30, eorPct = 18;
+setInterval(() => {
+  eorDay = Math.min(160, eorDay + 1);
+  eorPct = Math.min(100, Math.round((eorDay / 160) * 100));
+  const reached = eorDay >= 160;
+  el('g-days').textContent = eorDay;
+  el('g-power').textContent = (12000 * Math.max(0.6, 1 - 0.048 * Math.log(1 + eorDay / 10))).toFixed(0) + ' W';
+  el('g-radloss').textContent = '−' + (4.8 * Math.log(1 + eorDay / 10)).toFixed(1) + '%';
+  el('g-peri').textContent = Math.min(35786, 250 + eorDay * 225) + ' km';
+  el('g-apo').textContent = Math.min(35786, 35786).toFixed(0) + ' km';
+  el('g-eor-pct').textContent = eorPct + '%';
+  document.getElementById('bar-eor').style.width = eorPct + '%';
+  el('g-eor').textContent = reached ? 'GEO REACHED' : 'DAY ' + eorDay;
+  el('g-eor').className = reached ? 'status-card-val ok' : 'status-card-val sky';
+  if (reached) eorDay = 0;
+}, 200);
+
+// ════════════════════════════════════════════════════
+//  THREE.JS SCENE
+// ════════════════════════════════════════════════════
+
+const wrap = document.getElementById('canvas-wrap');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, wrap.clientWidth / wrap.clientHeight, 0.5, 3000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+renderer.shadowMap.enabled = true;
+wrap.appendChild(renderer.domElement);
+
+// Lights
+scene.add(new THREE.AmbientLight(0x334466, 0.8));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(150, 400, 200);
+sun.castShadow = true;
+scene.add(sun);
+const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.3);
+rimLight.position.set(-100, 100, -200);
+scene.add(rimLight);
+
+// Stars
+const starGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(3000);
+for (let i = 0; i < 3000; i++) {
+  starPos[i] = (Math.random() - 0.5) * 4000;
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, sizeAttenuation: true })));
+
+// Ground
+const groundGeo = new THREE.PlaneGeometry(600, 600, 30, 30);
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a2a3e, roughness: 1 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(500, 50, 0x1e2f48, 0x111a28);
+scene.add(grid);
+
+// Launch pad
+const padGeo = new THREE.CylinderGeometry(20, 20, 2, 32);
+const padMat = new THREE.MeshStandardMaterial({ color: 0x2a3f5e, roughness: 0.9 });
+const pad = new THREE.Mesh(padGeo, padMat);
+pad.position.set(0, 1, 0);
+scene.add(pad);
+
+// ── Mechazilla Tower ──
+function makeTower() {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x2a3f5e, metalness: 0.7, roughness: 0.4 });
+
+  // main column
+  const col = new THREE.Mesh(new THREE.BoxGeometry(7, 160, 7), mat);
+  col.position.set(-20, 80, 0);
+  col.castShadow = true;
+  g.add(col);
+
+  // cross braces
+  for (let h = 20; h < 160; h += 20) {
+    const brace = new THREE.Mesh(new THREE.BoxGeometry(2, 14, 2), mat);
+    brace.position.set(-14, h, 0);
+    brace.rotation.z = Math.PI / 4;
+    g.add(brace);
+  }
+
+  // chopstick arms
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.6, roughness: 0.3 });
+  const armGeo = new THREE.BoxGeometry(28, 3, 5);
+  const armL = new THREE.Mesh(armGeo, armMat);
+  armL.position.set(-5, 45, 7);
+  g.add(armL);
+  const armR = new THREE.Mesh(armGeo, armMat);
+  armR.position.set(-5, 45, -7);
+  g.add(armR);
+
+  // arm pins
+  for (const zOff of [10, 14]) {
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 3, 8), armMat);
+    pin.position.set(6, 47, zOff - 12);
+    pin.rotation.z = Math.PI / 2;
+    g.add(pin);
+  }
+  return g;
+}
+const tower = makeTower();
+scene.add(tower);
+
+// ── Starship ──
+const ship = new THREE.Group();
+
+// Body — stainless panels
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.95, roughness: 0.15 });
+
+const body = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 28, 32), bodyMat);
+ship.add(body);
+
+const nose = new THREE.Mesh(new THREE.ConeGeometry(2.5, 8, 32), bodyMat);
+nose.position.y = 18;
+ship.add(nose);
+
+// TPS black tiles on lower body
+const tilesMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+for (let row = -8; row < 4; row += 2) {
+  for (let ang = 0; ang < Math.PI; ang += 0.25) {
+    const tile = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.6, 0.1), tilesMat);
+    tile.position.set(2.45 * Math.cos(ang), row, 2.45 * Math.sin(ang));
+    tile.rotation.y = -ang;
+    ship.add(tile);
+  }
+}
+
+// Forward flaps
+const flapMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.5, roughness: 0.6 });
+const fwdFlapL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 4, 2.5), flapMat);
+fwdFlapL.position.set(2.5, 16, 0);
+ship.add(fwdFlapL);
+
+// Aft flaps
+const aftFlapL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7, 3.5), flapMat);
+aftFlapL.position.set(2.5, -10, 0);
+ship.add(aftFlapL);
+
+// Engine skirt
+const skirtMat = new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.8, roughness: 0.3 });
+const skirt = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.2, 3, 32, 1, true), skirtMat);
+skirt.position.y = -15.5;
+ship.add(skirt);
+
+// Raptor nozzles
+const nozzleMat = new THREE.MeshStandardMaterial({ color: 0x1c1c2e, metalness: 0.9, roughness: 0.2 });
+const nozzlePositions = [[0, 0], [2, 0], [-1, 1.73], [-1, -1.73], [2.5, 1.5], [2.5, -1.5]];
+const nozzles = [];
+for (let i = 0; i < 3; i++) {
+  const n = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.9, 2, 16), nozzleMat);
+  n.position.set(nozzlePositions[i][0] * 0.5, -15, nozzlePositions[i][1] * 0.5);
+  ship.add(n);
+  nozzles.push(n);
+}
+
+// Plume group
+const plumes = [];
+for (let i = 0; i < 3; i++) {
+  const plume = new THREE.Mesh(
+    new THREE.ConeGeometry(0.9, 10, 12),
+    new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 })
+  );
+  plume.rotation.x = Math.PI;
+  plume.position.set(nozzlePositions[i][0] * 0.5, -20, nozzlePositions[i][1] * 0.5);
+  ship.add(plume);
+  plumes.push(plume);
+}
+
+scene.add(ship);
+
+// Wind particles
+const N_PARTICLES = 200;
+const partGeo = new THREE.BufferGeometry();
+const partPos = new Float32Array(N_PARTICLES * 3);
+for (let i = 0; i < N_PARTICLES; i++) {
+  partPos[i * 3]     = (Math.random() - 0.5) * 400;
+  partPos[i * 3 + 1] = Math.random() * 200;
+  partPos[i * 3 + 2] = (Math.random() - 0.5) * 200;
+}
+partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+const particles = new THREE.Points(partGeo, new THREE.PointsMaterial({
+  color: 0x38bdf8, size: 1.5, transparent: true, opacity: 0.5
+}));
+scene.add(particles);
+
+// Wind arrow
+const windArrow = new THREE.ArrowHelper(
+  new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 20, 0x38bdf8, 4, 2.5
+);
+scene.add(windArrow);
+
+// Camera control
+let camOrbit = false;
+let camAngle = 0;
+camera.position.set(80, 90, 120);
+camera.lookAt(0, 50, 0);
+
+// ════════════════════════════════════════════════════
+//  SIMULATION CONTROL
+// ════════════════════════════════════════════════════
+
+let telemetry = generateTelemetry();
+let idx = 0, playing = true, speed = 1;
+
+const chartAlt   = new MiniChart('chart-alt',   '#38bdf8');
+const chartVz    = new MiniChart('chart-vz',    '#f59e0b');
+const chartSlosh = new MiniChart('chart-slosh', '#a78bfa');
+const chartHF    = new MiniChart('chart-hf',    '#ef4444');
+
+// Resize canvas elements
+function resizeChartCanvases() {
+  document.querySelectorAll('canvas.mini-chart').forEach(c => {
+    c.width = c.parentElement.clientWidth;
+    c.height = 70;
+  });
+}
+resizeChartCanvases();
+
+function el(id) { return document.getElementById(id); }
+
+function setClass(elemId, cls) {
+  const e = el(elemId); if (e) e.className = 'hud-val ' + cls;
+}
+function setText(elemId, text) {
+  const e = el(elemId); if (e) e.textContent = text;
+}
+function setCardClass(elemId, cls) {
+  const e = el(elemId); if (e) e.className = 'status-card-val ' + cls;
+}
+
+function updateUI(rec) {
+  // ── Flight telemetry ──
+  setText('v-time',   rec.t.toFixed(2) + ' s');
+  setText('v-alt',    rec.z.toFixed(1) + ' m');
+  setText('v-x',      rec.x.toFixed(1) + ' m');
+  setText('v-vz',     rec.vz.toFixed(2) + ' m/s');
+  setText('v-vx',     rec.vx.toFixed(2) + ' m/s');
+  setText('v-pitch',  rec.pitch_deg.toFixed(1) + '°');
+  setText('v-omega',  rec.omega.toFixed(1) + ' °/s');
+  setText('v-eng',    rec.active);
+  setText('v-thr',    (rec.targetThr * 100).toFixed(0) + '%');
+  setText('v-gim',    rec.gimbalActDeg.toFixed(1) + '°');
+
+  const lag = rec.gimbalLag;
+  setText('v-lag', lag.toFixed(2) + '°');
+  setClass('v-lag', lag > 0.5 ? 'warn' : 'ok');
+
+  setText('v-prop', Math.round(rec.prop) + ' kg');
+  const propPct = rec.prop / 25000 * 100;
+  el('bar-prop').style.width = propPct + '%';
+  el('bar-prop').style.background = propPct > 40 ? '#38bdf8' : propPct > 15 ? '#f59e0b' : '#ef4444';
+
+  setText('v-thrust', (rec.thrustMN).toFixed(2) + ' MN');
+  setText('v-twr',    rec.twr.toFixed(3));
+
+  setText('v-q',    (rec.qDyn).toFixed(0) + ' Pa');
+  setText('v-hf',   (rec.heatFlux).toFixed(1) + ' W/m²');
+  setText('v-aoa',  rec.aoa.toFixed(1) + '°');
+  setText('v-wind', rec.windX.toFixed(1) + ' m/s');
+  setText('v-rho',  rec.rho.toFixed(4) + ' kg/m³');
+
+  const gustEl = el('v-gust');
+  if (gustEl) {
+    gustEl.textContent = rec.gustActive ? 'ACTIVE (+8 m/s)' : 'INACTIVE';
+    gustEl.className = 'hud-val ' + (rec.gustActive ? 'warn' : 'ok');
+  }
+
+  // Catch gate
+  const catchEl = el('v-catch');
+  if (catchEl) {
+    catchEl.textContent = rec.catchStatus;
+    catchEl.className = 'hud-val ' + (rec.catchStatus.includes('LOCKED') ? 'ok' : rec.z < 50 ? 'warn' : 'ok');
+  }
+  setText('v-lat-err', rec.lateralErr.toFixed(2) + ' m');
+  setText('v-descent', rec.vz.toFixed(2) + ' m/s');
+  setText('v-contact', rec.z < 50 ? (rec.contactLoad).toFixed(0) + ' kN' : '—');
+
+  // IIP
+  setText('v-iip-x',   rec.iipX.toFixed(2) + ' km');
+  setText('v-iip-t',   rec.iipT.toFixed(1) + ' s');
+  const corridorSafe = Math.abs(rec.iipX) < 300;
+  setText('v-corridor', corridorSafe ? 'SAFE' : 'BREACH');
+  setClass('v-corridor', corridorSafe ? 'ok' : 'crit');
+
+  // ── Phase badge ──
+  let phase = 'PHASE 1 — FLIP BURN';
+  if (rec.active === 2) phase = 'PHASE 2 — DECELERATION BURN';
+  else if (rec.active === 1) phase = 'PHASE 3 — TERMINAL LANDING';
+  if (rec.z < 47 && rec.z > 43) phase = 'PHASE 4 — CATCH ENGAGEMENT';
+  el('phase-badge').textContent = phase;
+  el('lbl-phase').textContent = phase;
+  el('lbl-altitude').textContent = 'ALT ' + rec.z.toFixed(1) + ' m  |  VZ ' + rec.vz.toFixed(1) + ' m/s';
+
+  const catchLbl = el('lbl-catch');
+  if (rec.catchStatus.includes('LOCKED')) {
+    catchLbl.textContent = '🟢 CHOPSTICKS LOCKED';
+    catchLbl.style.color = '#22c55e';
+  } else if (rec.z < 50) {
+    catchLbl.textContent = '⚡ FINAL ALIGNMENT';
+    catchLbl.style.color = '#f59e0b';
+  } else {
+    catchLbl.textContent = '';
+  }
+
+  // Mission clock
+  const mm = Math.floor(rec.t / 60).toString().padStart(2, '0');
+  const ss = (rec.t % 60).toFixed(3).padStart(6, '0');
+  setText('mission-clock', `T+ ${mm}:${ss}`);
+
+  // ── Slosh ──
+  drawTank('slosh-tank-canvas', rec.loxPhi, rec.loxSub, rec.loxGas);
+  drawTank('slosh-ch4-canvas', rec.ch4Phi, rec.ch4Sub, rec.ch4Gas, true);
+  setText('v-lox-phi', rec.loxPhi.toFixed(1) + '°');
+  setText('v-lox-sub', rec.loxSub.toFixed(2) + ' m');
+  setText('v-ch4-phi', rec.ch4Phi.toFixed(1) + '°');
+  setText('v-ch4-sub', rec.ch4Sub.toFixed(2) + ' m');
+
+  const loxGasEl = el('v-lox-gas');
+  const ch4GasEl = el('v-ch4-gas');
+  if (loxGasEl) { loxGasEl.textContent = rec.loxGas ? 'GAS INGESTION!' : 'SAFE'; loxGasEl.className = 'hud-val ' + (rec.loxGas ? 'crit' : 'ok'); }
+  if (ch4GasEl) { ch4GasEl.textContent = rec.ch4Gas ? 'GAS INGESTION!' : 'SAFE'; ch4GasEl.className = 'hud-val ' + (rec.ch4Gas ? 'crit' : 'ok'); }
+
+  setText('v-torque', rec.sloshTorque.toFixed(0) + ' N·m');
+  setText('v-com',    rec.comShift.toFixed(2) + ' mm');
+
+  const overallSlosh = rec.loxGas || rec.ch4Gas;
+  const riskEl = el('v-slosh-risk');
+  if (riskEl) { riskEl.textContent = overallSlosh ? 'CRITICAL_CAVITATION' : 'SAFE'; riskEl.className = 'hud-val ' + (overallSlosh ? 'crit' : 'ok'); }
+
+  const sloshChip = el('slosh-chip');
+  if (sloshChip) { sloshChip.textContent = 'SLOSH: ' + (overallSlosh ? 'CRIT' : 'NOMINAL'); sloshChip.className = 'chip ' + (overallSlosh ? 'red' : 'amber'); }
+
+  // ── Safety ──
+  setText('v-acc',  (rec.t < 0.5 ? 0.01 : 0.01) + ' m/s²');
+  setText('v-disp', '3.0 mm');
+
+  const clampRatio = Math.max(0, 1 - rec.t / 500);
+  el('bar-clamp').style.width = (96 * clampRatio + 4) + '%';
+
+  const tdGate = rec.z < 5 ? 'EVALUATING' : 'STANDBY';
+  const tdEl = el('s-touchdown');
+  if (tdEl) { tdEl.textContent = tdGate; tdEl.className = 'status-card-val ' + (rec.z < 2 ? 'ok' : rec.z < 5 ? 'warn' : 'ok'); }
+
+  setText('v-radar', rec.z.toFixed(2) + ' m');
+  setText('v-lidar', rec.lidarAlt.toFixed(2) + ' m');
+  setText('v-ins',   rec.insAlt.toFixed(2) + ' m');
+  setText('v-fused', rec.z.toFixed(2) + ' m');
+  setText('v-cforce', rec.z < 2 ? (rec.contactLoad).toFixed(0) + ' kN' : '—');
+
+  // ── TPS ──
+  setText('v-peak-hf', rec.peakHF.toFixed(0) + ' W/m²');
+  setText('v-peak-q',  rec.peakQ.toFixed(0) + ' Pa');
+  const worstZone = rec.peakHF > 50000 ? 'Nose Stagnation Cap (×2.5)' : 'Windward Fwd Barrel (×1.8)';
+  setText('t-worstzone', worstZone);
+  drawHullMap('tps-hullmap', rec.peakHF, rec.peakQ);
+
+  // Charts
+  chartAlt.push(rec.z);
+  chartVz.push(rec.vz);
+  chartSlosh.push(rec.loxPhi);
+  chartHF.push(rec.heatFlux);
+}
+
+// ════════════════════════════════════════════════════
+//  3D RENDER LOOP
+// ════════════════════════════════════════════════════
+
+let lastTimestamp = 0;
+const SCALE = 0.22; // 1m real → SCALE units in scene
+
+function animate(ts) {
+  requestAnimationFrame(animate);
+
+  if (playing && ts - lastTimestamp > 16) {
+    idx = Math.min(idx + speed, telemetry.length - 1);
+    el('scrubber').value = Math.round((idx / (telemetry.length - 1)) * 1000);
+    lastTimestamp = ts;
+  }
+
+  const rec = telemetry[Math.floor(idx)];
+  if (!rec) { renderer.render(scene, camera); return; }
+
+  // Ship position
+  ship.position.y = rec.z * SCALE;
+  ship.position.x = rec.x * SCALE;
+
+  // Pitch
+  ship.rotation.z = -(rec.pitch_deg * Math.PI / 180);
+
+  // Plumes
+  const activeEng = rec.active;
+  const thr = rec.targetThr;
+  const plumeFlicker = 0.85 + 0.15 * Math.sin(ts * 0.05);
+  plumes.forEach((p, i) => {
+    p.visible = i < activeEng && rec.z > 1;
+    if (p.visible) {
+      const s = thr * plumeFlicker * (0.6 + 0.4 * Math.random() * 0.1);
+      p.scale.set(s, s * (1 + thr * 0.5), s);
+      p.material.opacity = 0.6 + thr * 0.3;
+      p.material.color.setHSL(0.55 + thr * 0.08, 0.9, 0.6);
+    }
+  });
+
+  // Wind particles
+  const posArr = partGeo.attributes.position.array;
+  const wv = (rec.windX || 10) * 0.04;
+  for (let i = 0; i < N_PARTICLES; i++) {
+    posArr[i * 3] += wv;
+    if (posArr[i * 3] > 200) posArr[i * 3] = -200;
+  }
+  partGeo.attributes.position.needsUpdate = true;
+  particles.material.opacity = 0.3 + (rec.gustActive ? 0.25 : 0);
+  particles.material.color.set(rec.gustActive ? 0xfbbf24 : 0x38bdf8);
+
+  // Wind arrow
+  windArrow.position.set(ship.position.x - 25, ship.position.y + 15, 0);
+  const arrowLen = Math.max(5, rec.windX * 1.2);
+  windArrow.setLength(arrowLen, Math.min(4, arrowLen * 0.3), Math.min(2.5, arrowLen * 0.2));
+  windArrow.setColor(rec.gustActive ? new THREE.Color(0xfbbf24) : new THREE.Color(0x38bdf8));
+
+  // Camera
+  if (camOrbit) {
+    camAngle += 0.003;
+    const r = 150;
+    camera.position.set(
+      r * Math.sin(camAngle),
+      ship.position.y + 40,
+      r * Math.cos(camAngle)
+    );
+    camera.lookAt(ship.position.x, ship.position.y, 0);
+  } else {
+    // Follow cam: keep ship at center, zoom based on altitude
+    const targetY = Math.max(20, ship.position.y * 0.7 + 15);
+    camera.position.y += (targetY - camera.position.y) * 0.02;
+    camera.lookAt(ship.position.x, ship.position.y, 0);
+  }
+
+  updateUI(rec);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+// ════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel-page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    const panel = document.getElementById('panel-' + tab.dataset.panel);
+    if (panel) panel.classList.add('active');
+    resizeChartCanvases();
+  });
+});
+
+// ════════════════════════════════════════════════════
+//  CONTROLS
+// ════════════════════════════════════════════════════
+
+el('btn-play').addEventListener('click', () => {
+  playing = !playing;
+  el('btn-play').textContent = playing ? '⏸ Pause' : '▶ Play';
+  el('btn-play').className = playing ? 'btn primary' : 'btn';
+});
+
+el('btn-reset').addEventListener('click', () => {
+  idx = 0;
+  el('scrubber').value = 0;
+  if (!playing) { playing = true; el('btn-play').textContent = '⏸ Pause'; el('btn-play').className = 'btn primary'; }
+});
+
+el('btn-cam-orbit').addEventListener('click', () => {
+  camOrbit = !camOrbit;
+  el('btn-cam-orbit').className = camOrbit ? 'btn active' : 'btn';
+  if (!camOrbit) {
+    camera.position.set(80, 90, 120);
+  }
+});
+
+el('scrubber').addEventListener('input', e => {
+  idx = (e.target.value / 1000) * (telemetry.length - 1);
+});
+
+document.querySelectorAll('.btn-speed').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.btn-speed').forEach(b => b.className = 'btn btn-speed');
+    btn.className = 'btn btn-speed active';
+    speed = parseFloat(btn.dataset.speed);
+  });
+});
+
+// Load JSON from pipeline output
+el('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const raw = JSON.parse(ev.target.result);
+      // Accept flight_telemetry.json from Python pipeline
+      if (Array.isArray(raw) && raw.length > 0 && 'altitude_m' in raw[0]) {
+        telemetry = raw.map(r => ({
+          t: r.time_s,
+          z: r.altitude_m,
+          x: r.downrange_m || 0,
+          vz: r.velocity_z_mps,
+          vx: r.velocity_x_mps || 0,
+          pitch_deg: r.pitch_deg,
+          theta: r.pitch_deg,
+          omega: r.pitch_rate_deg_s || 0,
+          active: r.time_s < 2.2 ? 3 : r.altitude_m > 25 ? 2 : 1,
+          targetThr: r.throttle || 0.8,
+          gimbalDeg: r.gimbal_deg || 0,
+          gimbalActDeg: r.gimbal_deg || 0,
+          gimbalLag: Math.abs((r.gimbal_cmd_deg || 0) - (r.gimbal_deg || 0)),
+          prop: r.propellant_mass_kg || 15000,
+          qDyn: r.dynamic_pressure_pa || 0,
+          heatFlux: r.heat_flux_w_m2 || 0,
+          peakHF: 0, peakQ: 0,
+          twr: 0,
+          thrustMN: 0,
+          windX: 12,
+          gustActive: false,
+          loxPhi: 0, ch4Phi: 0,
+          loxSub: 2.5, ch4Sub: 2.0,
+          loxGas: false, ch4Gas: false,
+          sloshTorque: 0, comShift: 0,
+          rho: 1.225 * Math.exp(-r.altitude_m / 8500),
+          aoa: Math.abs(r.pitch_deg),
+          catchStatus: 'STANDBY',
+          lateralErr: 0,
+          contactLoad: 0,
+          iipX: 0, iipT: 0,
+          radarAlt: r.altitude_m,
+          lidarAlt: r.altitude_m,
+          insAlt: r.altitude_m,
+        }));
+        // Backfill peak values
+        let ph = 0, pq = 0;
+        telemetry.forEach(rec => {
+          ph = Math.max(ph, rec.heatFlux); pq = Math.max(pq, rec.qDyn);
+          rec.peakHF = ph; rec.peakQ = pq;
         });
-        if (z <= 0.35) break;
-      }
-      return records;
-    }
-
-    let telemetry = generateBaselineTelemetry();
-    let currentIndex = 0;
-    let isPlaying = true;
-    let playbackSpeed = 1.0;
-
-    // 3D Scene Initialization
-    const container = document.getElementById('canvas-container');
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 2000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.appendChild(renderer.domElement);
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    sunLight.position.set(100, 300, 200);
-    scene.add(sunLight);
-
-    // Ground and Launch Mount
-    const gridHelper = new THREE.GridHelper(400, 40, 0x334155, 0x1e293b);
-    gridHelper.position.y = 0;
-    scene.add(gridHelper);
-
-    // Mechazilla Launch Tower & Chopsticks
-    const towerGeo = new THREE.BoxGeometry(10, 140, 10);
-    const towerMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.4 });
-    const tower = new THREE.Mesh(towerGeo, towerMat);
-    tower.position.set(-18, 70, 0);
-    scene.add(tower);
-
-    const armGeo = new THREE.BoxGeometry(22, 2.5, 3);
-    const armMat = new THREE.MeshStandardMaterial({ color: 0x0284c7 });
-    const chopstickL = new THREE.Mesh(armGeo, armMat);
-    chopstickL.position.set(-5, 45, 6);
-    scene.add(chopstickL);
-    const chopstickR = new THREE.Mesh(armGeo, armMat);
-    chopstickR.position.set(-5, 45, -6);
-    scene.add(chopstickR);
-
-    // Starship 3D Model Group
-    const ship = new THREE.Group();
-    // Stainless Steel Body Cylinder (Length: 50m, Diameter: 9m, scale: 0.5)
-    const bodyGeo = new THREE.CylinderGeometry(2.25, 2.25, 25, 32);
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9, roughness: 0.2 });
-    const body = new THREE.Mesh(bodyGeo, steelMat);
-    ship.add(body);
-
-    // Nose Cone
-    const noseGeo = new THREE.ConeGeometry(2.25, 7.5, 32);
-    const nose = new THREE.Mesh(noseGeo, steelMat);
-    nose.position.y = 12.5 + 3.75;
-    ship.add(nose);
-
-    // Forward Flaps
-    const flapGeo = new THREE.BoxGeometry(0.3, 3.5, 1.8);
-    const flapMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
-    const flapFwdL = new THREE.Mesh(flapGeo, flapMat);
-    flapFwdL.position.set(2.3, 14.0, 0);
-    ship.add(flapFwdL);
-
-    // Aft Flaps
-    const flapAftGeo = new THREE.BoxGeometry(0.4, 6.0, 3.0);
-    const flapAftL = new THREE.Mesh(flapAftGeo, flapMat);
-    flapAftL.position.set(2.3, -9.0, 0);
-    ship.add(flapAftL);
-
-    // Raptor Thrust Plume
-    const plumeGeo = new THREE.ConeGeometry(1.6, 8.0, 16);
-    const plumeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
-    const plume = new THREE.Mesh(plumeGeo, plumeMat);
-    plume.rotation.x = Math.PI;
-    plume.position.y = -12.5 - 4.0;
-    ship.add(plume);
-
-    scene.add(ship);
-
-    // Dynamic 3D Wind Vector Arrow
-    const windDir = new THREE.Vector3(1, 0, 0);
-    const windOrigin = new THREE.Vector3(0, 0, 0);
-    const windArrow = new THREE.ArrowHelper(windDir, windOrigin, 15, 0x38bdf8, 3, 2);
-    scene.add(windArrow);
-
-    // Atmospheric Boundary Layer Wind Stream Particle System
-    const streamCount = 120;
-    const streamGeo = new THREE.BufferGeometry();
-    const streamPositions = new Float32Array(streamCount * 3);
-    for (let i = 0; i < streamCount; i++) {
-      streamPositions[i * 3] = (Math.random() - 0.5) * 300;
-      streamPositions[i * 3 + 1] = Math.random() * 150;
-      streamPositions[i * 3 + 2] = (Math.random() - 0.5) * 120;
-    }
-    streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
-    const streamMat = new THREE.PointsMaterial({
-      color: 0x38bdf8,
-      size: 1.8,
-      transparent: true,
-      opacity: 0.55
-    });
-    const windStreams = new THREE.Points(streamGeo, streamMat);
-    scene.add(windStreams);
-
-    camera.position.set(60, 60, 90);
-    camera.lookAt(0, 40, 0);
-
-    // 2D Slosh Tank Canvas
-    const sloshCanvas = document.getElementById('slosh-canvas');
-    const sCtx = sloshCanvas.getContext('2d');
-
-    function drawSloshTank(phi_deg, submergence_m, gas_ingestion) {
-      sCtx.clearRect(0, 0, 180, 180);
-      const cx = 90, cy = 90, r = 70;
-
-      // Tank outline:
-      sCtx.beginPath();
-      sCtx.arc(cx, cy, r, 0, 2 * Math.PI);
-      sCtx.strokeStyle = "#475569";
-      sCtx.lineWidth = 3;
-      sCtx.stroke();
-
-      // Fluid free-surface line (tilted by phi):
-      const rad = (phi_deg * Math.PI) / 180.0;
-      sCtx.save();
-      sCtx.beginPath();
-      sCtx.arc(cx, cy, r, 0, 2 * Math.PI);
-      sCtx.clip();
-
-      sCtx.translate(cx, cy);
-      sCtx.rotate(rad);
-      sCtx.fillStyle = "rgba(56, 189, 248, 0.45)";
-      sCtx.fillRect(-r, 0, 2 * r, r);
-      sCtx.restore();
-
-      // Suction Inlet at bottom:
-      sCtx.beginPath();
-      sCtx.arc(cx, cy + r - 8, 6, 0, 2 * Math.PI);
-      sCtx.fillStyle = gas_ingestion ? "#ef4444" : "#22c55e";
-      sCtx.fill();
-    }
-
-    // Animation & Update Loop
-    function updateHUD(rec) {
-      document.getElementById('val-time').innerText = rec.time_s.toFixed(2) + " s";
-      document.getElementById('val-alt').innerText = rec.altitude_m.toFixed(1) + " m";
-      document.getElementById('val-x').innerText = rec.downrange_m.toFixed(1) + " m";
-      document.getElementById('val-vz').innerText = rec.velocity_z_mps.toFixed(1) + " m/s";
-      document.getElementById('val-pitch').innerText = rec.pitch_deg.toFixed(1) + "°";
-      document.getElementById('val-omega').innerText = rec.pitch_rate_deg_s.toFixed(1) + " °/s";
-      document.getElementById('val-engines').innerText = rec.active_engines || 1;
-      document.getElementById('val-throttle').innerText = Math.round((rec.throttle || 0.8) * 100) + " %";
-      const gimbalAct = rec.gimbal_deg || 0;
-      const gimbalCmd = rec.gimbal_cmd_deg !== undefined ? rec.gimbal_cmd_deg : gimbalAct;
-      const tvcLag = Math.abs(gimbalCmd - gimbalAct);
-      document.getElementById('val-gimbal').innerText = gimbalAct.toFixed(1) + "°";
-      const tvcLagEl = document.getElementById('val-tvc-lag');
-      if (tvcLagEl) {
-        tvcLagEl.innerText = tvcLag.toFixed(2) + "°";
-        tvcLagEl.className = tvcLag > 0.5 ? "hud-val alert" : "hud-val safe";
-      }
-      document.getElementById('val-prop').innerText = Math.round(rec.propellant_mass_kg || rec.remaining_prop_kg || 15000) + " kg";
-      document.getElementById('val-q').innerText = Math.round(rec.dynamic_pressure_pa || 0) + " Pa";
-      document.getElementById('val-heat').innerText = (rec.heat_flux_w_m2 || 0).toFixed(1) + " W/m²";
-
-      document.getElementById('val-wind').innerText = (rec.wind_speed_mps || 0).toFixed(1) + " m/s";
-      document.getElementById('val-airspeed').innerText = (rec.airspeed_mps || 0).toFixed(1) + " m/s";
-      document.getElementById('val-aoa').innerText = (rec.aoa_deg || 0).toFixed(1) + "°";
-      const gustEl = document.getElementById('val-gust');
-      if (rec.gust_active) {
-        gustEl.innerText = "ACTIVE GUST (+8 m/s)";
-        gustEl.className = "hud-val alert";
+        idx = 0;
+        el('scrubber').value = 0;
+        el('footer-status').textContent = `Loaded ${file.name} — ${telemetry.length} records from Python pipeline`;
       } else {
-        gustEl.innerText = "INACTIVE (Shear only)";
-        gustEl.className = "hud-val safe";
+        alert('Expected flight_telemetry.json from run_pipeline.py');
       }
-
-      const catchEl = document.getElementById('val-catch');
-      if (rec.altitude_m <= 46.0 && rec.altitude_m >= 44.0 && Math.abs(rec.velocity_z_mps) < 0.4) {
-        catchEl.innerText = "CHOPSTICK CAPTURED!";
-        catchEl.className = "hud-val safe";
-      } else if (rec.altitude_m < 50.0) {
-        catchEl.innerText = "FINAL PIN ALIGNMENT";
-        catchEl.className = "hud-val alert";
-      } else {
-        catchEl.innerText = "STANDBY";
-        catchEl.className = "hud-val safe";
-      }
-
-      const sloshStatus = document.getElementById('slosh-status');
-      if (rec.gas_ingestion) {
-        sloshStatus.innerText = "GAS INGESTION HAZARD!";
-        sloshStatus.className = "hud-val alert";
-      } else {
-        sloshStatus.innerText = "SUBMERGED (OK)";
-        sloshStatus.className = "hud-val safe";
-      }
-      document.getElementById('slosh-depth').innerText = "Inlet Depth: " + (rec.lox_submergence_m || 2.0).toFixed(2) + " m";
-
-      drawSloshTank(rec.lox_phi_deg || 0, rec.lox_submergence_m || 2.0, rec.gas_ingestion);
+    } catch (err) {
+      alert('JSON parse error: ' + err.message);
     }
+  };
+  reader.readAsText(file);
+});
 
-    function animate() {
-      requestAnimationFrame(animate);
-
-      if (telemetry.length > 0) {
-        const rec = telemetry[currentIndex];
-
-        // Position 3D Ship (scaled 1:1 in height coordinates)
-        ship.position.y = rec.altitude_m * 0.25;
-        ship.position.x = rec.downrange_m * 0.25;
-
-        // Pitch Angle (90 deg belly-flop to 0 deg vertical)
-        const pitchRad = (rec.pitch_deg * Math.PI) / 180.0;
-        ship.rotation.z = -pitchRad;
-
-        // Plume scale according to active engines & throttle
-        const scale = (rec.active_engines || 1) * (rec.throttle || 0.8) * 0.4;
-        plume.scale.set(scale, scale, scale);
-        plume.visible = (rec.altitude_m > 0.4);
-
-        // Update 3D Wind Arrow tracking vehicle
-        windArrow.position.set(ship.position.x - 18, ship.position.y + 12, ship.position.z);
-        const arrowLen = Math.max(4.0, (rec.wind_speed_mps || 10.0) * 0.8);
-        windArrow.setLength(arrowLen, Math.min(3, arrowLen * 0.3), Math.min(2, arrowLen * 0.2));
-        if (rec.gust_active) {
-          windArrow.setColor(new THREE.Color(0xfbbf24));
-        } else {
-          windArrow.setColor(new THREE.Color(0x38bdf8));
-        }
-
-        // Animate atmospheric wind stream particles
-        const posArray = streamGeo.attributes.position.array;
-        const streamVelocity = (rec.wind_speed_mps || 12.0) * 0.05;
-        for (let i = 0; i < streamCount; i++) {
-          posArray[i * 3] += streamVelocity;
-          if (posArray[i * 3] > 150) posArray[i * 3] = -150;
-        }
-        streamGeo.attributes.position.needsUpdate = true;
-
-        updateHUD(rec);
-
-        if (isPlaying) {
-          currentIndex += playbackSpeed;
-          if (currentIndex >= telemetry.length) currentIndex = telemetry.length - 1;
-          document.getElementById('scrubber').value = (currentIndex / (telemetry.length - 1)) * 100;
-        }
-      }
-
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // UI Event Handlers
-    const btnPlay = document.getElementById('btn-play');
-    btnPlay.addEventListener('click', () => {
-      isPlaying = !isPlaying;
-      btnPlay.innerText = isPlaying ? "Pause" : "Play";
-    });
-
-    document.getElementById('btn-reset').addEventListener('click', () => {
-      currentIndex = 0;
-      document.getElementById('scrubber').value = 0;
-    });
-
-    document.getElementById('scrubber').addEventListener('input', (e) => {
-      currentIndex = Math.floor((e.target.value / 100) * (telemetry.length - 1));
-    });
-
-    document.querySelectorAll('.btn-speed').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        playbackSpeed = parseFloat(btn.dataset.speed);
-      });
-    });
-
-    // Custom Telemetry File Loading
-    document.getElementById('file-input').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const raw = JSON.parse(event.target.result);
-          telemetry = raw.map(r => ({
-            time_s: r.time_s,
-            altitude_m: r.altitude_m,
-            downrange_m: r.downrange_m || 0.0,
-            velocity_z_mps: r.velocity_z_mps,
-            velocity_x_mps: r.velocity_x_mps || 0.0,
-            pitch_deg: r.pitch_deg,
-            pitch_rate_deg_s: r.pitch_rate_deg_s || 0.0,
-            throttle: r.throttle || 0.8,
-            active_engines: r.active_engines || ((r.time_s < 2.5) ? 3 : (r.altitude_m > 25 ? 2 : 1)),
-            gimbal_deg: r.gimbal_deg || 0.0,
-            remaining_prop_kg: r.remaining_prop_kg || 15000,
-            dynamic_pressure_pa: r.dynamic_pressure_pa || 0,
-            heat_flux_w_m2: r.heat_flux_w_m2 || 0,
-            lox_phi_deg: r.lox_phi_deg || 0,
-            lox_submergence_m: r.lox_submergence_m || 2.5,
-            gas_ingestion: r.lox_gas_ingestion || false,
-            wind_speed_mps: r.wind_speed_mps || (12.0 * Math.pow(Math.max(0.1, r.altitude_m) / 100.0, 0.143)),
-            airspeed_mps: r.speed_mps || Math.abs(r.velocity_z_mps),
-            aoa_deg: r.aoa_deg || Math.abs(r.pitch_deg),
-            gust_active: r.gust_active || false
-          }));
-          currentIndex = 0;
-          document.getElementById('scrubber').value = 0;
-        } catch (err) {
-          alert("Error parsing JSON telemetry file: " + err.message);
-        }
-      };
-      reader.readAsText(file);
-    });
-
-    window.addEventListener('resize', () => {
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    });
-  </script>
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = wrap.clientWidth / wrap.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  resizeChartCanvases();
+});
+</script>
 </body>
 </html>
