@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import math
 from typing import Optional, List, Tuple
 
-from .models import StarshipVehicle, FlightState
+from .models import StarshipVehicle, FlightState, TVCActuator
 from .aerodynamics import AerodynamicModel, Atmosphere
 from .telemetry import TelemetryRecord, TelemetryLogger
 
@@ -59,6 +59,13 @@ class TrajectoryOptimizer:
         # Terminal deceleration limit for touchdown throttle scheduling:
         self.target_touchdown_accel = 14.5  # m/s^2 (~1.48 g)
 
+        # TVC actuator dynamic response and rate limiter:
+        self.actuator = TVCActuator(
+            max_angle_rad=self.vehicle.engines.max_gimbal_rad,
+            max_rate_rad_s=math.radians(self.vehicle.engines.max_gimbal_rate_deg_s),
+            time_constant_s=self.vehicle.engines.time_constant_s,
+        )
+
     def _compute_derivatives(
         self,
         state: FlightState,
@@ -105,15 +112,16 @@ class TrajectoryOptimizer:
         az = f_net_z / curr_mass
 
         # Rotational dynamics:
-        # Thrust gimbal creates pitching moment about center of mass:
-        moment_thrust = -f_thrust * math.sin(clamped_gimbal) * self.vehicle.gimbal_moment_arm
+        # Thrust gimbal creates pitching moment about instantaneous center of mass:
+        moment_arm = self.vehicle.compute_gimbal_moment_arm(state.propellant_mass)
+        moment_thrust = -f_thrust * math.sin(clamped_gimbal) * moment_arm
 
         # Aerodynamic rotational damping:
         q_dyn = aero["dynamic_pressure"]
         moment_aero_damping = -0.15 * q_dyn * self.aero_model.area_broadside * self.vehicle.length * state.omega
 
         moment_net = moment_thrust + moment_aero_damping
-        i_yy = self.vehicle.moment_of_inertia_pitch
+        i_yy = self.vehicle.compute_moment_of_inertia_pitch(state.propellant_mass)
         alpha_ang = moment_net / i_yy
 
         # Propellant mass burn rate:
@@ -137,6 +145,7 @@ class TrajectoryOptimizer:
         state = initial_state or FlightState()
         init_prop = state.propellant_mass
         t = 0.0
+        self.actuator.reset(0.0)
 
         max_lat_accel = 0.0
         max_ax_accel = 0.0
@@ -186,13 +195,16 @@ class TrajectoryOptimizer:
                 min(self.vehicle.engines.max_gimbal_rad, gimbal_cmd)
             )
 
+            # Advance TVC actuator through first-order lag and slew rate limiter:
+            gimbal_actual = self.actuator.step(gimbal_cmd, dt)
+
             # Check fuel exhaustion:
             if state.propellant_mass <= 0.0:
                 target_throttle = 0.0
                 state.propellant_mass = 0.0
 
             # 2. Compute telemetry snapshot:
-            derivatives = self._compute_derivatives(state, target_throttle, gimbal_cmd, active_engines=active_engines)
+            derivatives = self._compute_derivatives(state, target_throttle, gimbal_actual, active_engines=active_engines)
             _, _, ax_curr, az_curr, _, _, _ = derivatives
 
             # Accelerations in vehicle body axes:
@@ -228,7 +240,7 @@ class TrajectoryOptimizer:
                         pitch_deg=round(state.pitch_deg, 3),
                         pitch_rate_deg_s=round(state.omega_deg_s, 3),
                         throttle=round(target_throttle, 3),
-                        gimbal_deg=round(math.degrees(gimbal_cmd), 3),
+                        gimbal_deg=round(math.degrees(gimbal_actual), 3),
                         thrust_n=round(target_throttle * active_engines * self.vehicle.engines.max_thrust_per_engine, 1),
                         drag_n=round(aero_info["drag"], 1),
                         lift_n=round(aero_info["lift"], 1),
@@ -237,6 +249,8 @@ class TrajectoryOptimizer:
                         total_mass_kg=round(total_m, 1),
                         accel_lateral_mps2=round(accel_lat, 3),
                         accel_axial_mps2=round(accel_axial, 3),
+                        gimbal_cmd_deg=round(math.degrees(gimbal_cmd), 3),
+                        propellant_mass_kg=round(state.propellant_mass, 1),
                     )
                 )
 
@@ -256,7 +270,7 @@ class TrajectoryOptimizer:
                 propellant_mass=max(0.0, state.propellant_mass + 0.5 * dt * k1_m),
             )
             k2_x, k2_z, k2_vx, k2_vz, k2_th, k2_om, k2_m = self._compute_derivatives(
-                s2, target_throttle, gimbal_cmd, active_engines=active_engines
+                s2, target_throttle, gimbal_actual, active_engines=active_engines
             )
 
             # k3
@@ -271,7 +285,7 @@ class TrajectoryOptimizer:
                 propellant_mass=max(0.0, state.propellant_mass + 0.5 * dt * k2_m),
             )
             k3_x, k3_z, k3_vx, k3_vz, k3_th, k3_om, k3_m = self._compute_derivatives(
-                s3, target_throttle, gimbal_cmd, active_engines=active_engines
+                s3, target_throttle, gimbal_actual, active_engines=active_engines
             )
 
             # k4
@@ -286,7 +300,7 @@ class TrajectoryOptimizer:
                 propellant_mass=max(0.0, state.propellant_mass + dt * k3_m),
             )
             k4_x, k4_z, k4_vx, k4_vz, k4_th, k4_om, k4_m = self._compute_derivatives(
-                s4, target_throttle, gimbal_cmd, active_engines=active_engines
+                s4, target_throttle, gimbal_actual, active_engines=active_engines
             )
 
             # State update:

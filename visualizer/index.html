@@ -109,7 +109,7 @@
       <span class="badge">FLIGHT & SLOSH VIEWER</span>
     </div>
     <div style="font-size: 12px; color: #94a3b8;">
-      Telemetry Engine v0.2.0 | WindModel & Boundary Layer Shear Active
+      Telemetry Engine v0.3.0 | TVC Actuator Slew Limits, Response Lag & Mass Depletion
     </div>
   </header>
 
@@ -127,6 +127,7 @@
       <div class="hud-row"><span class="hud-label">Active Engines:</span><span class="hud-val" id="val-engines">3</span></div>
       <div class="hud-row"><span class="hud-label">Engine Throttle:</span><span class="hud-val" id="val-throttle">80 %</span></div>
       <div class="hud-row"><span class="hud-label">Gimbal Angle:</span><span class="hud-val" id="val-gimbal">0.0°</span></div>
+      <div class="hud-row"><span class="hud-label">TVC Lag (Cmd-Act):</span><span class="hud-val safe" id="val-tvc-lag">0.00°</span></div>
       <div class="hud-row"><span class="hud-label">Remaining Prop:</span><span class="hud-val" id="val-prop">25000 kg</span></div>
       <div class="hud-row"><span class="hud-label">Dynamic Press:</span><span class="hud-val" id="val-q">2830 Pa</span></div>
       <div class="hud-row"><span class="hud-label">Heat Flux:</span><span class="hud-val" id="val-heat">30.3 W/m²</span></div>
@@ -402,8 +403,16 @@
       document.getElementById('val-omega').innerText = rec.pitch_rate_deg_s.toFixed(1) + " °/s";
       document.getElementById('val-engines').innerText = rec.active_engines || 1;
       document.getElementById('val-throttle').innerText = Math.round((rec.throttle || 0.8) * 100) + " %";
-      document.getElementById('val-gimbal').innerText = (rec.gimbal_deg || 0).toFixed(1) + "°";
-      document.getElementById('val-prop').innerText = Math.round(rec.remaining_prop_kg || 15000) + " kg";
+      const gimbalAct = rec.gimbal_deg || 0;
+      const gimbalCmd = rec.gimbal_cmd_deg !== undefined ? rec.gimbal_cmd_deg : gimbalAct;
+      const tvcLag = Math.abs(gimbalCmd - gimbalAct);
+      document.getElementById('val-gimbal').innerText = gimbalAct.toFixed(1) + "°";
+      const tvcLagEl = document.getElementById('val-tvc-lag');
+      if (tvcLagEl) {
+        tvcLagEl.innerText = tvcLag.toFixed(2) + "°";
+        tvcLagEl.className = tvcLag > 0.5 ? "hud-val alert" : "hud-val safe";
+      }
+      document.getElementById('val-prop').innerText = Math.round(rec.propellant_mass_kg || rec.remaining_prop_kg || 15000) + " kg";
       document.getElementById('val-q').innerText = Math.round(rec.dynamic_pressure_pa || 0) + " Pa";
       document.getElementById('val-heat').innerText = (rec.heat_flux_w_m2 || 0).toFixed(1) + " W/m²";
 

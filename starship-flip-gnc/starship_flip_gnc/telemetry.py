@@ -35,6 +35,8 @@ class TelemetryRecord:
     total_mass_kg: float
     accel_lateral_mps2: float
     accel_axial_mps2: float
+    gimbal_cmd_deg: float = 0.0
+    propellant_mass_kg: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert record to dictionary."""
