@@ -41,3 +41,15 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 4.4 Standalone interactive 3D WebGL flight & slosh browser visualizer (`visualizer/index.html`).
 - [x] 4.5 Multi-platform GitHub Actions CI/CD matrix across Python 3.9-3.12 (`.github/workflows/ci.yml`).
 - [x] 4.6 MIT License file and root README documentation with badges and Oxide ecosystem links.
+
+---
+
+## Phase 5: Aerospace Incident Safety Interlocks (CNSA & Global Failure Mitigations)
+- [x] 5.1 Test stand structural breakaway interlock & premature liftoff abort guard (`test_stand_safety.py` - Space Pioneer Tianlong-3).
+- [x] 5.2 Multi-sensor consensus & Weight-on-Wheels touchdown gate (`touchdown_gate.py` - Deep Blue Aerospace Nebula-1).
+- [x] 5.3 Aerodynamic control surface jam detection & torque authority reallocation (`actuator_fault_allocator.py` - i-Space Hyperbola-1 Y5).
+- [x] 5.4 Engine-out asymmetric thrust compensation & burn duration reshaping (`engine_out_recovery.py` - LandSpace Zhuque-2).
+- [x] 5.5 Ballistic Instantaneous Impact Point (IIP) & population corridor geofence predictor (`debris_hazard_predictor.py` - CNSA Long March corridors).
+- [x] 5.6 Comprehensive unit test coverage across all safety modules (19 new tests, 37 total in `flip-gnc`, 55 overall).
+- [x] 5.7 End-to-end integration into `run_pipeline.py` emitting `pipeline_artifacts/incident_safety_validation.json`.
+- [x] 5.8 Open and resolve dedicated GitHub issues (#12, #13, #14, #15, #16).
