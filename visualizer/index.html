@@ -109,7 +109,7 @@
       <span class="badge">FLIGHT & SLOSH VIEWER</span>
     </div>
     <div style="font-size: 12px; color: #94a3b8;">
-      Telemetry Engine v0.1.0 | Mechazilla Catch Envelope Enabled
+      Telemetry Engine v0.2.0 | WindModel & Boundary Layer Shear Active
     </div>
   </header>
 
@@ -130,6 +130,12 @@
       <div class="hud-row"><span class="hud-label">Remaining Prop:</span><span class="hud-val" id="val-prop">25000 kg</span></div>
       <div class="hud-row"><span class="hud-label">Dynamic Press:</span><span class="hud-val" id="val-q">2830 Pa</span></div>
       <div class="hud-row"><span class="hud-label">Heat Flux:</span><span class="hud-val" id="val-heat">30.3 W/m²</span></div>
+      <div class="hud-row" style="margin-top: 6px; border-top: 1px solid #334155; padding-top: 6px;">
+        <span class="hud-label">Wind Speed (wx):</span><span class="hud-val" id="val-wind">12.0 m/s</span>
+      </div>
+      <div class="hud-row"><span class="hud-label">True Airspeed:</span><span class="hud-val" id="val-airspeed">71.0 m/s</span></div>
+      <div class="hud-row"><span class="hud-label">Aerodynamic AoA:</span><span class="hud-val" id="val-aoa">89.5°</span></div>
+      <div class="hud-row"><span class="hud-label">Discrete Gust:</span><span class="hud-val safe" id="val-gust">INACTIVE</span></div>
       <div class="hud-row" style="margin-top: 6px; border-top: 1px solid #334155; padding-top: 6px;">
         <span class="hud-label">Catch Envelope:</span><span class="hud-val safe" id="val-catch">STANDBY</span>
       </div>
@@ -157,13 +163,20 @@
   </footer>
 
   <script>
-    // Procedural Starship Telemetry Generator (used if no custom JSON is loaded)
+    // Procedural Starship Telemetry Generator (incorporates WindModel boundary layer & discrete gust)
     function generateBaselineTelemetry() {
       const records = [];
       const dt = 0.04;
       const totalTime = 38.0;
       let z = 500.0, x = 0.0, vz = -70.0, vx = 0.0, theta = 90.0, prop = 25000.0;
       let slosh_phi = 0.0, lox_sub = 2.95;
+
+      const refWindSpeed = 12.0;
+      const refAltitude = 100.0;
+      const shearExponent = 0.143;
+      const gustAmplitude = 8.0;
+      const gustDuration = 3.0;
+      const gustStartTime = 1.0;
 
       for (let t = 0; t <= totalTime; t += dt) {
         let throttle = 0.80, engines = 3, gimbal = 0.0;
@@ -192,6 +205,25 @@
         z = Math.max(0.3, z + vz * dt);
         prop = Math.max(9200.0, prop - engines * 280.0 * dt);
 
+        // Atmospheric boundary layer shear & discrete gust
+        const altClamp = Math.max(0.1, z);
+        const meanWind = refWindSpeed * Math.pow(altClamp / refAltitude, shearExponent);
+        let gustSpeed = 0.0;
+        let gustActive = false;
+        if (t >= gustStartTime && t <= (gustStartTime + gustDuration)) {
+          const phase = 2.0 * Math.PI * (t - gustStartTime) / gustDuration;
+          gustSpeed = (gustAmplitude / 2.0) * (1.0 - Math.cos(phase));
+          gustActive = true;
+        }
+        const windX = meanWind + gustSpeed;
+        const uRelX = vx - windX;
+        const uRelZ = vz;
+        const airspeed = Math.hypot(uRelX, uRelZ);
+        const fpaDeg = Math.atan2(uRelZ, uRelX) * (180.0 / Math.PI);
+        const aoaDeg = Math.abs(theta - fpaDeg);
+        const rho = 1.225 * Math.exp(-z / 8500.0);
+        const dynPressure = 0.5 * rho * (airspeed ** 2);
+
         records.push({
           time_s: t,
           altitude_m: z,
@@ -204,11 +236,15 @@
           active_engines: engines,
           gimbal_deg: gimbal,
           remaining_prop_kg: prop,
-          dynamic_pressure_pa: Math.max(0, 2800 * (z / 500.0)),
+          dynamic_pressure_pa: dynPressure,
           heat_flux_w_m2: Math.max(0, 30.0 * (Math.abs(vz) / 70.0)),
           lox_phi_deg: slosh_phi,
           lox_submergence_m: lox_sub,
-          gas_ingestion: lox_sub < 0.15
+          gas_ingestion: lox_sub < 0.15,
+          wind_speed_mps: windX,
+          airspeed_mps: airspeed,
+          aoa_deg: aoaDeg,
+          gust_active: gustActive
         });
         if (z <= 0.35) break;
       }
@@ -293,6 +329,31 @@
 
     scene.add(ship);
 
+    // Dynamic 3D Wind Vector Arrow
+    const windDir = new THREE.Vector3(1, 0, 0);
+    const windOrigin = new THREE.Vector3(0, 0, 0);
+    const windArrow = new THREE.ArrowHelper(windDir, windOrigin, 15, 0x38bdf8, 3, 2);
+    scene.add(windArrow);
+
+    // Atmospheric Boundary Layer Wind Stream Particle System
+    const streamCount = 120;
+    const streamGeo = new THREE.BufferGeometry();
+    const streamPositions = new Float32Array(streamCount * 3);
+    for (let i = 0; i < streamCount; i++) {
+      streamPositions[i * 3] = (Math.random() - 0.5) * 300;
+      streamPositions[i * 3 + 1] = Math.random() * 150;
+      streamPositions[i * 3 + 2] = (Math.random() - 0.5) * 120;
+    }
+    streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
+    const streamMat = new THREE.PointsMaterial({
+      color: 0x38bdf8,
+      size: 1.8,
+      transparent: true,
+      opacity: 0.55
+    });
+    const windStreams = new THREE.Points(streamGeo, streamMat);
+    scene.add(windStreams);
+
     camera.position.set(60, 60, 90);
     camera.lookAt(0, 40, 0);
 
@@ -346,6 +407,18 @@
       document.getElementById('val-q').innerText = Math.round(rec.dynamic_pressure_pa || 0) + " Pa";
       document.getElementById('val-heat').innerText = (rec.heat_flux_w_m2 || 0).toFixed(1) + " W/m²";
 
+      document.getElementById('val-wind').innerText = (rec.wind_speed_mps || 0).toFixed(1) + " m/s";
+      document.getElementById('val-airspeed').innerText = (rec.airspeed_mps || 0).toFixed(1) + " m/s";
+      document.getElementById('val-aoa').innerText = (rec.aoa_deg || 0).toFixed(1) + "°";
+      const gustEl = document.getElementById('val-gust');
+      if (rec.gust_active) {
+        gustEl.innerText = "ACTIVE GUST (+8 m/s)";
+        gustEl.className = "hud-val alert";
+      } else {
+        gustEl.innerText = "INACTIVE (Shear only)";
+        gustEl.className = "hud-val safe";
+      }
+
       const catchEl = document.getElementById('val-catch');
       if (rec.altitude_m <= 46.0 && rec.altitude_m >= 44.0 && Math.abs(rec.velocity_z_mps) < 0.4) {
         catchEl.innerText = "CHOPSTICK CAPTURED!";
@@ -389,6 +462,25 @@
         const scale = (rec.active_engines || 1) * (rec.throttle || 0.8) * 0.4;
         plume.scale.set(scale, scale, scale);
         plume.visible = (rec.altitude_m > 0.4);
+
+        // Update 3D Wind Arrow tracking vehicle
+        windArrow.position.set(ship.position.x - 18, ship.position.y + 12, ship.position.z);
+        const arrowLen = Math.max(4.0, (rec.wind_speed_mps || 10.0) * 0.8);
+        windArrow.setLength(arrowLen, Math.min(3, arrowLen * 0.3), Math.min(2, arrowLen * 0.2));
+        if (rec.gust_active) {
+          windArrow.setColor(new THREE.Color(0xfbbf24));
+        } else {
+          windArrow.setColor(new THREE.Color(0x38bdf8));
+        }
+
+        // Animate atmospheric wind stream particles
+        const posArray = streamGeo.attributes.position.array;
+        const streamVelocity = (rec.wind_speed_mps || 12.0) * 0.05;
+        for (let i = 0; i < streamCount; i++) {
+          posArray[i * 3] += streamVelocity;
+          if (posArray[i * 3] > 150) posArray[i * 3] = -150;
+        }
+        streamGeo.attributes.position.needsUpdate = true;
 
         updateHUD(rec);
 
@@ -451,7 +543,11 @@
             heat_flux_w_m2: r.heat_flux_w_m2 || 0,
             lox_phi_deg: r.lox_phi_deg || 0,
             lox_submergence_m: r.lox_submergence_m || 2.5,
-            gas_ingestion: r.lox_gas_ingestion || false
+            gas_ingestion: r.lox_gas_ingestion || false,
+            wind_speed_mps: r.wind_speed_mps || (12.0 * Math.pow(Math.max(0.1, r.altitude_m) / 100.0, 0.143)),
+            airspeed_mps: r.speed_mps || Math.abs(r.velocity_z_mps),
+            aoa_deg: r.aoa_deg || Math.abs(r.pitch_deg),
+            gust_active: r.gust_active || false
           }));
           currentIndex = 0;
           document.getElementById('scrubber').value = 0;
