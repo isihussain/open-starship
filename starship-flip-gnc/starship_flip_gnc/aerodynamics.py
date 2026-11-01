@@ -1,7 +1,8 @@
 """
 Aerodynamic force and aerothermal heating models for Starship landing regimes.
 
-Includes cross-sectional drag variation across angle-of-attack and stagnation heat flux.
+Includes cross-sectional drag variation across angle-of-attack, stagnation heat flux,
+and atmospheric boundary layer wind shear and discrete gust dynamics.
 """
 
 from dataclasses import dataclass
@@ -24,6 +25,50 @@ class Atmosphere:
         """
         alt = max(0.0, altitude_m)
         return self.sea_level_density * math.exp(-alt / self.scale_height)
+
+
+@dataclass
+class WindModel:
+    """
+    Atmospheric boundary layer wind shear and discrete gust model.
+
+    Power-law boundary layer shear:
+      v_mean(z) = v_ref * (z / z_ref) ^ alpha_shear
+
+    Discrete '1 - cosine' gust profile (FAA/MIL-F-8785C compliant):
+      v_gust(t) = (A_gust / 2) * (1 - cos(2*pi * (t - t_start) / T_gust))
+    """
+    ref_wind_speed: float = 0.0      # m/s at reference altitude
+    ref_altitude: float = 10.0       # Reference altitude (standard 10m meteorological height)
+    shear_exponent: float = 0.14     # Terrain roughness exponent (0.14 for coastal Starbase terrain)
+    gust_amplitude: float = 0.0      # Gust peak velocity [m/s]
+    gust_start_time: float = 0.0     # Time when gust initiates [s]
+    gust_duration: float = 5.0       # Total duration of discrete gust [s]
+    gust_direction_deg: float = 0.0  # Angle in horizontal plane (0 deg = pure +X crosswind)
+
+    def compute_wind(self, altitude_m: float, time_s: float = 0.0) -> tuple[float, float]:
+        """
+        Calculates horizontal (vx) and vertical (vz) wind velocity components at (altitude, time).
+
+        Returns:
+            tuple[float, float]: (wind_vx, wind_vz) in inertial frame [m/s].
+        """
+        alt = max(0.1, altitude_m)
+        mean_speed = self.ref_wind_speed * ((alt / self.ref_altitude) ** self.shear_exponent)
+
+        # Evaluate discrete gust:
+        gust_speed = 0.0
+        if self.gust_amplitude > 0.0 and self.gust_duration > 0.0:
+            if self.gust_start_time <= time_s <= (self.gust_start_time + self.gust_duration):
+                phase = 2.0 * math.pi * (time_s - self.gust_start_time) / self.gust_duration
+                gust_speed = (self.gust_amplitude / 2.0) * (1.0 - math.cos(phase))
+
+        total_horizontal_speed = mean_speed + gust_speed
+        rad = math.radians(self.gust_direction_deg)
+        wind_vx = total_horizontal_speed * math.cos(rad)
+        wind_vz = 0.0  # In boundary layer, vertical wind is typically zero or negligible
+
+        return (wind_vx, wind_vz)
 
 
 class AerodynamicModel:
@@ -56,22 +101,30 @@ class AerodynamicModel:
         vz: float,
         theta: float,
         altitude: float,
-        atmosphere: Atmosphere
+        atmosphere: Atmosphere,
+        wind_vx: float = 0.0,
+        wind_vz: float = 0.0
     ) -> dict:
         """
         Calculates drag, lift, dynamic pressure, and aerothermal heat flux.
 
         Args:
-            vx: Horizontal velocity [m/s].
-            vz: Vertical velocity [m/s].
+            vx: Horizontal inertial velocity [m/s].
+            vz: Vertical inertial velocity [m/s].
             theta: Pitch angle [rad] (0 = vertical nose-up, pi/2 = horizontal).
             altitude: Current altitude above surface [m].
             atmosphere: Atmospheric density provider.
+            wind_vx: Ambient horizontal wind velocity [m/s] (positive = in +X direction).
+            wind_vz: Ambient vertical wind velocity [m/s].
 
         Returns:
             Dictionary containing fx_aero, fz_aero, dynamic_pressure, heat_flux_w_m2.
         """
-        speed = math.hypot(vx, vz)
+        # Relative airspeed vector:
+        u_rel_x = vx - wind_vx
+        u_rel_z = vz - wind_vz
+        speed = math.hypot(u_rel_x, u_rel_z)
+
         rho = atmosphere.density(altitude)
         q_dyn = 0.5 * rho * (speed ** 2)
 
@@ -86,19 +139,15 @@ class AerodynamicModel:
                 "heat_flux_w_m2": 0.0,
             }
 
-        # Flight path angle (direction of velocity vector):
-        gamma = math.atan2(vz, vx)
-
         # Body orientation vector pointing from tail to nose:
-        # theta = 0 points +Z (vertical), theta = pi/2 points +X (horizontal)
         body_x = math.sin(theta)
         body_z = math.cos(theta)
 
-        # Velocity unit vector:
-        uv_x = vx / speed
-        uv_z = vz / speed
+        # Relative velocity unit vector:
+        uv_x = u_rel_x / speed
+        uv_z = u_rel_z / speed
 
-        # Cosine of angle between body axis and velocity vector:
+        # Cosine of angle between body axis and relative velocity vector:
         cos_beta = max(-1.0, min(1.0, body_x * uv_x + body_z * uv_z))
         beta = math.acos(cos_beta)
 
@@ -112,24 +161,23 @@ class AerodynamicModel:
         cd = self.cd_axial * (cos_a ** 2) + self.cd_broadside * (sin_a ** 2)
         ref_area = self.area_axial * (cos_a ** 2) + self.area_broadside * (sin_a ** 2)
 
-        # Total drag opposes the velocity vector:
+        # Total drag opposes the relative velocity vector:
         drag_force = q_dyn * cd * ref_area
 
-        # Flap-modulated lift acts perpendicular to velocity:
+        # Flap-modulated lift acts perpendicular to relative velocity:
         cl = self.cl_max * math.sin(2.0 * alpha)
         lift_force = q_dyn * cl * ref_area
 
-        # Drag components (strictly opposing velocity):
+        # Drag components (strictly opposing relative velocity):
         f_drag_x = -drag_force * uv_x
         f_drag_z = -drag_force * uv_z
 
-        # Lift components (perpendicular to velocity, rotated +90 deg in vertical plane):
+        # Lift components (perpendicular to relative velocity, rotated +90 deg in vertical plane):
         # Normal vector to (uv_x, uv_z) is (-uv_z, uv_x)
         f_lift_x = -lift_force * uv_z
         f_lift_z = lift_force * uv_x
 
         # Stagnation point aerothermal heat flux (Sutton-Graves relation):
-        # q_dot = k * sqrt(rho / R_nose) * v^3 [W/m^2]
         r_nose = self.diameter / 2.0
         heat_flux = self.k_sutton_graves * math.sqrt(rho / r_nose) * (speed ** 3)
 
