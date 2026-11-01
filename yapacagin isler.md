@@ -53,3 +53,15 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 5.6 Comprehensive unit test coverage across all safety modules (19 new tests, 37 total in `flip-gnc`, 55 overall).
 - [x] 5.7 End-to-end integration into `run_pipeline.py` emitting `pipeline_artifacts/incident_safety_validation.json`.
 - [x] 5.8 Open and resolve dedicated GitHub issues (#12, #13, #14, #15, #16).
+
+---
+
+## Phase 6: starship-geo-sat (Geostationary Operations & Türksat Incident Mitigations)
+- [x] 6.1 Cryogenic upper-stage turbopump valve failure & suborbital abort detector (`launch_abort_detector.py` - Türksat 1A).
+- [x] 6.2 Propellant exhaustion, lunisolar inclination drift & ground tracking compensation (`inclined_orbit_dynamics.py` - Türksat 1B/1C).
+- [x] 6.3 Hall-effect electric orbit raising (EOR) & Van Allen radiation damage integration (`electric_orbit_raising.py` - Türksat 5A/5B).
+- [x] 6.4 Zero-magnetic-field reaction wheel desaturation via pure-torque thruster couples (`reaction_wheel_desat.py` - Türksat 6A).
+- [x] 6.5 Transponder cross-polarization interference (XPI) & Ka-band rain fade AUPC guard (`rfi_transponder_guard.py` - Türksat 3A/4A/4B).
+- [x] 6.6 Standalone unit test suite (14 new tests in `starship-geo-sat/tests`, 69 tests passing total).
+- [x] 6.7 Pipeline orchestration integration as Step 7 emitting `pipeline_artifacts/geo_satellite_validation.json`.
+- [x] 6.8 Open and resolve dedicated GitHub issues (#17, #18, #19, #20, #21).

@@ -5,11 +5,12 @@ This document provides developer guidelines, architectural decisions, and operat
 ---
 
 ## 1. Project Purpose & Scope
-The suite models the primary physical, operational, and safety bottlenecks across next-generation reusable launch vehicles:
+The suite models the primary physical, operational, and safety bottlenecks across next-generation reusable launch vehicles, orbital transfer stages, and geostationary telecommunications platforms:
 1. **starship-flip-gnc:** 3-DoF trajectory optimization, thrust-vector control (TVC), Mechazilla chopstick tower catch kinematics, and aerospace incident safety interlocks.
 2. **starship-cryo-slosh:** Fluid free-surface sloshing, suction inlet gas ingestion in cryogenic header tanks, and orbital ship-to-ship propellant transfers.
 3. **starship-tps-vision:** Optical defect detection and aerothermal load prioritization for 18,000+ hexagonal ceramic heat shield tiles.
-4. **visualizer:** Interactive 3D WebGL flight replay and real-time slosh cutaway app.
+4. **starship-geo-sat:** Geostationary satellite operations, electric orbit raising (EOR), zero-magnetic-field reaction wheel desaturation, and transponder payload protection derived from the Türksat satellite program (Türksat 1A through 6A).
+5. **visualizer:** Interactive 3D WebGL flight replay and real-time slosh cutaway app.
 
 ---
 
@@ -37,6 +38,14 @@ The suite models the primary physical, operational, and safety bottlenecks acros
   - Instantaneous impact point & geofencing (Long March)
        │
        ▼
+[ starship-geo-sat: Geostationary Satellite Operations & Türksat Mitigations ]
+  - Upper-stage cryogenic abort detector (Türksat 1A)
+  - Inclined orbit drift & ground tracking (Türksat 1B/1C)
+  - Electric orbit raising & radiation degradation (Türksat 5A/5B)
+  - GEO reaction wheel momentum desaturation (Türksat 6A)
+  - Transponder interference & rain fade AUPC (Türksat 3A/4A/4B)
+       │
+       ▼
  [ 3D WebGL Flight Visualizer ]
 ```
 
@@ -46,12 +55,13 @@ The suite models the primary physical, operational, and safety bottlenecks acros
 ```bash
 cd /Users/johndoe/.gemini/antigravity/scratch/open-starship
 
-# Run all 55 unit tests across the 3 packages:
-PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision" python3 -m unittest discover -s starship-flip-gnc/tests
-PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision" python3 -m unittest discover -s starship-cryo-slosh/tests
-PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision" python3 -m unittest discover -s starship-tps-vision/tests
+# Run all 69 unit tests across the 4 packages:
+PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-flip-gnc/tests
+PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-cryo-slosh/tests
+PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-tps-vision/tests
+PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-geo-sat/tests
 
-# Run the 6-phase end-to-end pipeline:
+# Run the 7-phase end-to-end pipeline:
 python3 run_pipeline.py pipeline_artifacts
 
 # Open the 3D browser visualizer:
@@ -60,34 +70,32 @@ open visualizer/index.html
 
 ---
 
-## 4. Aerospace Incident Safety Architecture
+## 4. Geostationary Satellite Architecture (`starship-geo-sat`)
 
-The aerospace safety subsystem (`starship-flip-gnc`) guards against failure modes identified across CNSA and commercial NewSpace incident data:
+1. **`launch_abort_detector.py` (Türksat 1A):**
+   - *Failure Mode:* Cryogenic third-stage LOX turbopump valve failed on Ariane 44LP V63, leaving the spacecraft on a suborbital arc terminating in the Atlantic Ocean.
+   - *Architecture:* Detects chamber pressure collapse ($P_c < 0.8 P_{c,\text{nominal}}$) and velocity shortfall ($v < 10,200\text{ m/s}$), solves ballistic freefall equations to project ground impact coordinates, and commands spacecraft contingency battery preservation.
 
-1. **`test_stand_safety.py` (Space Pioneer Tianlong-3, June 2024):**
-   - *Failure Mode:* Static fire hold-down clamps sheared; flight software lacked automated abort triggers for test-stand breakaway, allowing the vehicle to climb to 2 km before impact.
-   - *Architecture:* In `STATIC_FIRE` mode, the module trips an irreversible emergency cutoff and tank depressurization if vertical displacement exceeds 30 mm, upward acceleration $\ddot{z} > 0.05\text{ g}$, or umbilical disconnect occurs during firing.
+2. **`inclined_orbit_dynamics.py` (Türksat 1B & 1C):**
+   - *Failure Mode:* Propellant depletion forced suspension of North-South station-keeping burns ($~45\text{ m/s per year}$). Lunisolar third-body perturbations induced natural inclination drift at ~0.86 deg/year, creating daily figure-eight ground track excursions.
+   - *Architecture:* Evaluates secular inclination drift, calculates diurnal Azimuth/Elevation pointing corrections for tracking antennas, computes off-axis parabolic dish gain loss, and reserves delta-v fuel for IADC super-GEO graveyard disposal ($+235\text{ km} + 1000 C_R \frac{A}{m}$).
 
-2. **`touchdown_gate.py` (Deep Blue Aerospace Nebula-1, September 2024):**
-   - *Failure Mode:* Rocket exhaust plume dust backscatter caused a single radar altimeter to report 0 m at 5 m altitude, causing premature engine shutdown and a hard landing.
-   - *Architecture:* Evaluates multi-channel consensus (radar, LiDAR, INS) to reject backscatter outliers. Requires dual confirmation before allowing engine cutoff: fused altitude $\le 0.40\text{ m}$ AND mechanical contact load $\ge 40\text{ kN}$ on physical microswitches. If cutoff is commanded prematurely, it commands a safe hover throttle override.
+3. **`electric_orbit_raising.py` (Türksat 5A & 5B):**
+   - *Failure Mode:* Hall-effect low-thrust spiral transfer took 140 to 160 days from GTO to GEO, trapping the spacecraft in the Van Allen proton and electron radiation belts.
+   - *Architecture:* Propagates low-thrust orbital energy addition, integrates 1-MeV equivalent electron fluence, and models solar cell non-ionizing energy loss (NIEL) power degradation.
 
-3. **`actuator_fault_allocator.py` (i-Space Hyperbola-1 Y5, August 2021):**
-   - *Failure Mode:* Detached thermal foam jammed a grid fin hinge; lack of adaptive torque reallocation caused uncontrollable roll rates and vehicle destruction.
-   - *Architecture:* Detects motor current stall saturation ($I \ge 40\text{ A}$) with tracking divergence over multiple control frames. Isolates the jammed surface, calculates its parasitic aerodynamic torque at dynamic pressure $q$, and solves least-squares reallocation across active surfaces and RCS thrusters.
+4. **`reaction_wheel_desat.py` (Türksat 6A):**
+   - *Failure Mode:* At 35,786 km, Earth's geomagnetic field is negligible (~100 nT), rendering magnetic torquers inoperable. Solar radiation pressure (SRP) builds up angular momentum in reaction wheels.
+   - *Architecture:* Tracks solar radiation pressure torque accumulation on asymmetric arrays, schedules pure-torque thruster couples (zero net translation force), and ensures orbital slot deadbands ($\pm 0.05^\circ$) are never violated.
 
-4. **`engine_out_recovery.py` (LandSpace Zhuque-2 / Multi-engine vehicles):**
-   - *Failure Mode:* Sudden flameout of an off-axis engine induces uncompensated pitching/yawing disturbance moments and cuts descent deceleration.
-   - *Architecture:* Determines gimbal trim angles directing the net thrust vector through the center of mass. Adjusts operational engine throttles to preserve required thrust-to-weight ratio (TWR), and extends burn duration via numerical integration of the rocket equation.
-
-5. **`debris_hazard_predictor.py` (CNSA Long March inland corridors):**
-   - *Failure Mode:* Spent booster stages falling into populated inland villages.
-   - *Architecture:* Projects instantaneous ballistic and drag-retarded impact coordinates (IIP), models 3-sigma dispersion ellipses, checks polygon geofences, and calculates divert $\Delta \mathbf{v}$ vectors to steer stages into safe corridors, or flags autonomous flight termination (AFTS).
+5. **`rfi_transponder_guard.py` (Türksat 3A, 4A, 4B):**
+   - *Failure Mode:* Terrestrial uplink cross-polarization leakage (XPI < 25 dB), TWTA amplifier saturation from rogue high-power carriers, and severe Ka-band attenuation (15 to 20 dB) during heavy rainstorms.
+   - *Architecture:* Models Saleh non-linear TWTA gain compression and IMD3 intermodulation distortion, flags cross-polarization violations, and calculates Automated Uplink Power Control (AUPC) feedback boosts.
 
 ---
 
 ## 5. Systems Compiler & Avionics Integration (Oxide)
-- The numerical equations in `starship-flip-gnc` and `starship-cryo-slosh` compile directly into freestanding C99 using **[Oxide](https://github.com/isihussain/oxide-compiler)**.
+- The numerical equations in `starship-flip-gnc`, `starship-cryo-slosh`, and `starship-geo-sat` compile directly into freestanding C99 using **[Oxide](https://github.com/isihussain/oxide-compiler)**.
 - Oxide's `StageMass` verification invariant enforces that total vehicle mass never breaches physical dry mass ($m_{\text{total}} \ge m_{\text{dry}}$), eliminating negative mass singularities during flight burns.
 - `native_bridge.py` dynamically compiles `starship_core.c` via standard `cc -O3 -shared -fPIC` and executes RK4 steps at native C execution speed via `ctypes`.
 
@@ -97,3 +105,4 @@ The aerospace safety subsystem (`starship-flip-gnc`) guards against failure mode
 - **starship-flip-gnc:** Extend 3-DoF equations into a full 6-DoF rigid-body dynamic model with flap aero-moment tables.
 - **starship-cryo-slosh:** Couple with 3D Smoothed Particle Hydrodynamics (SPH) solver for chaotic violent slosh regimes.
 - **starship-tps-vision:** Connect PyTorch YOLOv8 / Segment Anything (SAM) weights trained on drone inspection footage from the Starbase launch tower.
+- **starship-geo-sat:** Expand to include high-altitude lunar relay constellation cross-links and laser inter-satellite links (ISL).

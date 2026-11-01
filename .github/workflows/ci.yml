@@ -40,6 +40,11 @@ jobs:
         cd starship-tps-vision
         python -m unittest discover -s tests
 
+    - name: Run starship-geo-sat Unit Tests
+      run: |
+        cd starship-geo-sat
+        python -m unittest discover -s tests
+
     - name: Run End-to-End Orchestrator Pipeline
       run: |
         python run_pipeline.py test_ci_artifacts

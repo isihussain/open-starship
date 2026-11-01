@@ -7,7 +7,8 @@ Executes the unified data pipeline:
   3. starship-tps-vision: Derives aerothermal risk map from flight loads & executes tile inspection.
   4. Mechazilla Catch Solver: Evaluates chopstick arm capture kinematics at launch tower.
   5. In-Space Cryogenic Transfer: Simulates orbital propellant delivery from Tanker to Depot.
-  6. Flight Safety Interlocks: Validates failure mitigations from historical aerospace incidents.
+  6. Flight Safety Interlocks: Validates failure mitigations from historical launch vehicle incidents.
+  7. Geostationary Satellite Operations: Evaluates orbital dynamics and payload mitigations (Türksat fleet).
 """
 
 import sys
@@ -20,6 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR / "starship-flip-gnc"))
 sys.path.insert(0, str(BASE_DIR / "starship-cryo-slosh"))
 sys.path.insert(0, str(BASE_DIR / "starship-tps-vision"))
+sys.path.insert(0, str(BASE_DIR / "starship-geo-sat"))
 
 from starship_flip_gnc.models import StarshipVehicle, FlightState
 from starship_flip_gnc.trajectory import TrajectoryOptimizer
@@ -59,6 +61,31 @@ from starship_tps_vision.synthetic import SyntheticTileGridGenerator
 from starship_tps_vision.detector import TileDefectDetector
 from starship_tps_vision.reporter import InspectionReporter
 
+from starship_geo_sat.launch_abort_detector import (
+    LaunchAbortDetector,
+    PropulsionTelemetry,
+)
+from starship_geo_sat.inclined_orbit_dynamics import (
+    InclinedOrbitDynamics,
+    OrbitalElements,
+    GroundStation,
+)
+from starship_geo_sat.electric_orbit_raising import (
+    ElectricOrbitRaisingSimulator,
+    EORThrusterConfig,
+    SolarArraySpec,
+)
+from starship_geo_sat.reaction_wheel_desat import (
+    ReactionWheelDesaturator,
+    WheelAssemblyState,
+    SolarPressureProperties,
+)
+from starship_geo_sat.rfi_transponder_guard import (
+    RFITransponderGuard,
+    CarrierTelemetry,
+    TransponderState,
+)
+
 
 def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     out_path = Path(output_dir)
@@ -71,7 +98,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 1: Flight Dynamics & Trajectory Optimization (starship-flip-gnc)
     # -------------------------------------------------------------------------
-    print("\n[1/6] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
+    print("\n[1/7] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
     vehicle = StarshipVehicle(dry_mass=100_000.0, landing_propellant_mass=25_000.0)
     optimizer = TrajectoryOptimizer(vehicle=vehicle)
     gnc_logger = TelemetryLogger()
@@ -94,7 +121,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 2: Cryogenic Slosh & Ullage Ingestion (starship-cryo-slosh)
     # -------------------------------------------------------------------------
-    print("\n[2/6] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
+    print("\n[2/7] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
     assembly = HeaderTankAssembly.default_starship(with_baffles=True)
     slosh_sim = SloshSimulator(
         assembly=assembly,
@@ -117,7 +144,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 3: TPS Tile Damage Inspection (starship-tps-vision)
     # -------------------------------------------------------------------------
-    print("\n[3/6] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
+    print("\n[3/7] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
     risk_map = AerothermalRiskMap.from_telemetry(gnc_logger.records)
     generator = SyntheticTileGridGenerator(random_seed=42)
     observations = generator.generate_sector(num_tiles_axial=30, num_tiles_azimuthal=20, defect_rate=0.06)
@@ -140,7 +167,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 4: Mechazilla Tower Catch Verification
     # -------------------------------------------------------------------------
-    print("\n[4/6] Running: Mechazilla Chopstick Catch Solver...")
+    print("\n[4/7] Running: Mechazilla Chopstick Catch Solver...")
     catch_solver = MechazillaCatchSolver()
     catch_res = catch_solver.evaluate_capture(
         x_m=0.12,
@@ -158,7 +185,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 5: In-Space Cryogenic Propellant Transfer
     # -------------------------------------------------------------------------
-    print("\n[5/6] Running: In-Space Cryogenic Propellant Transfer Simulator...")
+    print("\n[5/7] Running: In-Space Cryogenic Propellant Transfer Simulator...")
     transfer_sim = OrbitalTransferSimulator()
     lox_fluid = CryogenicFluid.liquid_oxygen()
     transfer_res = transfer_sim.simulate_transfer(fluid=lox_fluid, target_mass_kg=80_000.0)
@@ -170,9 +197,8 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 6: Flight Safety Interlocks & Incident Mitigations
     # -------------------------------------------------------------------------
-    print("\n[6/6] Running: Aerospace Incident Safety Interlocks & Mitigations...")
+    print("\n[6/7] Running: Aerospace Incident Safety Interlocks & Mitigations...")
 
-    # A. Test Stand Breakaway Interlock (Tianlong-3 mitigation)
     stand_guard = TestStandSafetyInterlock(mode=TestStandMode.STATIC_FIRE)
     stand_check = stand_guard.evaluate(
         HoldDownSensorReading(
@@ -185,7 +211,6 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
         )
     )
 
-    # B. Touchdown Gate Multi-Sensor Consensus (Nebula-1 mitigation)
     touchdown_gate = TouchdownValidationGate()
     touchdown_check = touchdown_gate.evaluate(
         AltimeterSensorSuite(
@@ -199,7 +224,6 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
         commanded_engine_cutoff=True,
     )
 
-    # C. Actuator Fault Allocator (Hyperbola-1 mitigation)
     actuator_alloc = ActuatorFaultAllocator()
     actuators = [
         ActuatorTelemetry("aft_port", 0.02, 0.02, 14.0),
@@ -213,7 +237,6 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
         actuators=actuators,
     )
 
-    # D. Engine-Out Compensation (Zhuque-2 mitigation)
     engine_comp = EngineOutCompensator()
     v_state = VehicleState(
         mass_kg=vehicle.dry_mass + flight_result.propellant_remaining_kg,
@@ -231,7 +254,6 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
         nominal_burn_duration_s=12.0,
     )
 
-    # E. Debris Hazard Predictor (Long March corridor mitigation)
     debris_pred = DebrisHazardPredictor(
         zones=[
             GeofencePolygon("Inhabited_Settlement_A", True, 180.0, 240.0, -30.0, 30.0),
@@ -292,6 +314,115 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     print(f"      -> Engine-Out Controllability: {'CONTROLLABLE' if engine_check.attitude_controllable else 'UNCONTROLLABLE'} (TWR={engine_check.thrust_to_weight_ratio:.2f})")
     print(f"      -> Instantaneous Impact Point: {'SAFE_CORRIDOR' if debris_check.safe else 'BREACH_EXCLUSION'}")
     print(f"      -> Safety Validation Report Saved: {safety_json_path}")
+
+    # -------------------------------------------------------------------------
+    # STEP 7: Geostationary Satellite Operations (starship-geo-sat / Türksat Fleet)
+    # -------------------------------------------------------------------------
+    print("\n[7/7] Running: starship-geo-sat (Geostationary Operations & Payload Guard)...")
+
+    # A. Upper-stage abort detector (Türksat 1A)
+    abort_detector = LaunchAbortDetector()
+    abort_eval = abort_detector.evaluate(
+        PropulsionTelemetry(
+            timestamp_s=700.0,
+            chamber_pressure_bar=34.5,
+            turbopump_speed_rpm=61_800.0,
+            lox_valve_position_percent=99.0,
+            axial_acceleration_mps2=19.2,
+            altitude_km=210.0,
+            inertial_velocity_mps=9800.0,
+        )
+    )
+
+    # B. Inclined orbit dynamics & tracking (Türksat 1B/1C)
+    inclined_dyn = InclinedOrbitDynamics()
+    inclined_eval = inclined_dyn.propagate_drift(
+        initial=OrbitalElements(nominal_longitude_deg=42.0),
+        elapsed_years=3.5,
+        station=GroundStation(),
+        current_time_hours=6.0,
+        remaining_fuel_kg=15.0,
+    )
+
+    # C. Electric Orbit Raising & Radiation Degradation (Türksat 5A/5B)
+    eor_sim = ElectricOrbitRaisingSimulator()
+    eor_history = eor_sim.simulate_transfer(
+        simulation_step_days=10.0,
+        max_duration_days=30.0,
+    )
+    eor_latest = eor_history[-1]
+
+    # D. Zero-magnetic-field reaction wheel desaturation (Türksat 6A)
+    desaturator = ReactionWheelDesaturator()
+    srp_torque = desaturator.calculate_srp_torque_nm(SolarPressureProperties())
+    wheels_accum = desaturator.accumulate_momentum(
+        WheelAssemblyState(hx_nms=18.0, hy_nms=16.0, hz_nms=8.0),
+        srp_torque,
+        duration_hours=48.0,
+    )
+    desat_plan = desaturator.plan_desaturation(wheels_accum)
+
+    # E. RFI Transponder Guard & Rain Fade AUPC (Türksat 3A/4A/4B)
+    rfi_guard = RFITransponderGuard()
+    rfi_action = rfi_guard.evaluate_carrier(
+        CarrierTelemetry(
+            carrier_id="TURKSAT_42E_BEACON",
+            frequency_ghz=12.5,
+            polarization="V",
+            measured_input_power_dbw=-74.5,
+            cross_polar_leakage_power_dbw=-108.0,
+            rain_rate_mm_per_hr=12.0,
+        )
+    )
+
+    geo_summary = {
+        "launch_abort_detector": {
+            "nominal_thrust": abort_eval.nominal_thrust,
+            "abort_triggered": abort_eval.abort_triggered,
+            "injection_shortfall_mps": abort_eval.injection_shortfall_mps,
+            "status_message": abort_eval.status_message,
+        },
+        "inclined_orbit_dynamics": {
+            "current_inclination_deg": inclined_eval.current_inclination_deg,
+            "tracking_required": inclined_eval.tracking_required,
+            "graveyard_delta_v_mps": inclined_eval.graveyard_delta_v_mps,
+            "disposal_safe": inclined_eval.disposal_safe,
+            "status_message": inclined_eval.status_message,
+        },
+        "electric_orbit_raising": {
+            "elapsed_days": eor_latest.elapsed_days,
+            "perigee_altitude_km": eor_latest.current_perigee_altitude_km,
+            "apogee_altitude_km": eor_latest.current_apogee_altitude_km,
+            "solar_array_power_watts": eor_latest.solar_array_power_watts,
+            "power_degradation_percent": eor_latest.power_degradation_percent,
+        },
+        "reaction_wheel_desaturation": {
+            "desaturation_required": desat_plan.desaturation_required,
+            "pulse_duration_s": desat_plan.pulse_duration_s,
+            "propellant_consumed_grams": desat_plan.propellant_consumed_grams,
+            "station_keeping_deadband_safe": desat_plan.station_keeping_deadband_safe,
+            "status_message": desat_plan.status_message,
+        },
+        "rfi_transponder_guard": {
+            "carrier_id": rfi_action.carrier_id,
+            "cross_polar_isolation_db": rfi_action.cross_polar_isolation_db,
+            "xpi_violation": rfi_action.xpi_violation,
+            "twta_saturated": rfi_action.twta_saturated,
+            "aupc_recommended_boost_db": rfi_action.aupc_recommended_boost_db,
+            "status_message": rfi_action.status_message,
+        },
+    }
+
+    geo_json_path = out_path / "geo_satellite_validation.json"
+    with open(geo_json_path, "w", encoding="utf-8") as f:
+        json.dump(geo_summary, f, indent=2)
+
+    print(f"      -> Upper-Stage Injection Status: {'NOMINAL' if abort_eval.nominal_thrust else 'ABORT'}")
+    print(f"      -> Inclined Orbit Drift: Inc={inclined_eval.current_inclination_deg:.2f}° (Tracking: {'REQUIRED' if inclined_eval.tracking_required else 'FIXED'})")
+    print(f"      -> Electric Orbit Raising: Day {eor_latest.elapsed_days:.0f} (Array Power: {eor_latest.solar_array_power_watts:.0f}W, Loss: -{eor_latest.power_degradation_percent:.1f}%)")
+    print(f"      -> Wheel Desaturation: {'PULSED' if desat_plan.desaturation_required else 'HOLD'} (Deadband Safe: {desat_plan.station_keeping_deadband_safe})")
+    print(f"      -> Transponder Link Guard: XPI={rfi_action.cross_polar_isolation_db:.1f} dB (AUPC: +{rfi_action.aupc_recommended_boost_db:.1f} dB)")
+    print(f"      -> Geostationary Validation Saved: {geo_json_path}")
 
     print("\n================================================================")
     print("      ALL PHASES COMPLETED AND INTEGRATED SUCCESSFULLY          ")

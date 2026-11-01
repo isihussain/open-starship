@@ -2,17 +2,18 @@
 
 [![CI](https://github.com/isihussain/open-starship/actions/workflows/ci.yml/badge.svg)](https://github.com/isihussain/open-starship/actions/workflows/ci.yml)
 [![Live 3D Visualizer](https://img.shields.io/badge/Live%20Demo-3D%20Visualizer-38bdf8?style=flat-square&logo=google-chrome&logoColor=white)](https://isihussain.github.io/open-starship/)
-[![Tests](https://img.shields.io/badge/tests-55%20passed-22c55e.svg)](https://github.com/isihussain/open-starship)
+[![Tests](https://img.shields.io/badge/tests-69%20passed-22c55e.svg)](https://github.com/isihussain/open-starship)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-38bdf8.svg)](https://www.python.org)
 [![Compiler](https://img.shields.io/badge/verified%20by-Oxide%20C%2B%2B20-orange.svg)](https://github.com/isihussain/oxide-compiler)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-An open-source engineering suite that models and solves fundamental physical, operational, and safety challenges across next-generation reusable spacecraft:
+An open-source engineering suite that models and solves fundamental physical, operational, and safety challenges across next-generation reusable spacecraft, orbital transfer stages, and geostationary satellite platforms:
 
 1. **`starship-flip-gnc`**: 3-DoF trajectory optimization, thrust-vector control (TVC), Mechazilla chopstick tower catch kinematics, and aerospace flight safety interlocks.
 2. **`starship-cryo-slosh`**: Reduced-order mechanical pendulum simulator for cryogenic propellant sloshing, ullage gas ingestion, and orbital ship-to-ship propellant transfers.
 3. **`starship-tps-vision`**: Inspection pipeline fusing flight aerothermal load maps with optical sensor data to identify and prioritize damaged Thermal Protection System (TPS) hexagonal tiles.
-4. **`visualizer/`**: Interactive 3D WebGL flight and slosh visualizer running directly in any modern browser without installation.
+4. **`starship-geo-sat`**: Geostationary satellite operations, electric orbit raising (EOR), zero-magnetic-field reaction wheel desaturation, and transponder payload protection derived from the Türksat satellite program (Türksat 1A through 6A).
+5. **`visualizer/`**: Interactive 3D WebGL flight and slosh visualizer running directly in any modern browser without installation.
 
 ---
 
@@ -41,15 +42,23 @@ An open-source engineering suite that models and solves fundamental physical, op
   - Ballistic Instantaneous Impact Point (IIP) & geofence predictor (Long March corridors)
        │
        ▼
+[ starship-geo-sat: Geostationary Satellite Operations & Türksat Mitigations ]
+  - Upper-stage cryogenic turbopump failure & suborbital abort detector (Türksat 1A)
+  - Propellant depletion, lunisolar drift & inclined orbit ground tracking (Türksat 1B/1C)
+  - Electric orbit raising (EOR) & Van Allen radiation damage integration (Türksat 5A/5B)
+  - Weak-magnetic-field reaction wheel momentum desaturation via thrusters (Türksat 6A)
+  - Transponder cross-polarization guard & Ka-band rain fade AUPC (Türksat 3A/4A/4B)
+       │
+       ▼
  [ 3D WebGL Flight Visualizer ]
   (visualizer/index.html)
 ```
 
 ---
 
-## Aerospace Incident Safety Interlocks
+## Aerospace Launch & Flight Safety Interlocks
 
-The flight safety subsystem incorporates mitigations derived from real-world aerospace launch, static-fire, and landing incidents across CNSA and commercial NewSpace flight data:
+The launch vehicle safety subsystem incorporates mitigations derived from real-world aerospace launch, static-fire, and landing incidents across CNSA and commercial NewSpace flight data:
 
 | Subsystem Module | Incident Origin | Failure Mode | Algorithmic Mitigation |
 | :--- | :--- | :--- | :--- |
@@ -61,11 +70,25 @@ The flight safety subsystem incorporates mitigations derived from real-world aer
 
 ---
 
+## Geostationary Satellite Operations (Türksat Fleet Mitigations)
+
+The `starship-geo-sat` package solves operational, orbital mechanics, and space environment failure modes documented across Turkey's national satellite telecommunications fleet:
+
+| Subsystem Module | Historical Reference | Operational Bottleneck | Algorithmic Solution |
+| :--- | :--- | :--- | :--- |
+| **`launch_abort_detector.py`** | **Türksat 1A** (Ariane 44LP V63, 1994) | Cryogenic third-stage LOX turbopump valve failed; stage underperformed and terminated early, dropping the satellite into the Atlantic Ocean. | Monitors chamber pressure gradient ($\frac{dP_c}{dt}$), turbopump RPM, and stage velocity shortfall. Calculates instantaneous ballistic impact point and triggers spacecraft contingency safing. |
+| **`inclined_orbit_dynamics.py`** | **Türksat 1B & 1C** (2005, 2008) | Chemical propellant depleted for North-South station-keeping ($~45\text{ m/s per year}$). Lunisolar third-body gravity caused ~0.86°/year natural inclination drift, causing figure-eight ground tracks and link dropouts. | Models orbital element secular drift under lunar and solar gravity. Calculates ground antenna Azimuth/Elevation pointing corrections and verifies propellant reserve for graveyard disposal ($+235\text{ km} + 1000 C_R \frac{A}{m}$). |
+| **`electric_orbit_raising.py`** | **Türksat 5A & 5B** (Eurostar E3000EOR, 2021) | Hall-effect electric orbit raising takes 140 to 160 days from GTO to GEO, exposing solar cells to extended proton and electron radiation within the Van Allen belts. | Low-thrust Gauss-variational spiral propagator. Integrates equivalent 1-MeV electron fluence across belt passes and calculates solar array non-ionizing energy loss (NIEL) power degradation. |
+| **`reaction_wheel_desat.py`** | **Türksat 6A** (Indigenous Platform, 2024) | Earth's magnetic field at 35,786 km is negligible (~100 nT), rendering magnetic torquers useless. Solar radiation pressure accumulates angular momentum in reaction wheels. | Formulates coupled minimum-propellant pulsed thruster desaturation firing sequences with zero net translational force, preventing station-keeping deadband violations ($\pm 0.05^\circ$). |
+| **`rfi_transponder_guard.py`** | **Türksat 3A, 4A, 4B** (2008–Present) | Terrestrial uplink cross-polarization leakage (XPI < 25 dB), TWTA non-linear saturation from rogue carriers, and Ka-band rain fade (up to 20 dB loss at 30 GHz). | Implements Saleh non-linear TWTA gain compression modeling, co-channel cross-polarization violation detection, and automated uplink power control (AUPC) feedback commands. |
+
+---
+
 ## Repository Structure
 
 ```
 open-starship/
-├── .github/workflows/ci.yml # Multi-platform CI (Ubuntu, macOS, Python 3.9-3.12)
+├── .github/workflows/ci.yml # Multi-platform CI (Ubuntu, macOS, Python 3.10-3.12)
 ├── starship-flip-gnc/     # Flight dynamics, 3-DoF optimizer, Mechazilla catch, safety interlocks
 │   ├── starship_flip_gnc/ # GNC models, aerodynamics, trajectory, catch, incident interlocks
 │   │   ├── models.py                   # Vehicle geometry, Raptor cluster limits, flight state
@@ -87,9 +110,17 @@ open-starship/
 ├── starship-tps-vision/   # TPS heat shield tile defect detection & work order pipeline
 │   ├── starship_tps_vision/ # Risk map, synthetic generator, detector, reporter
 │   └── tests/             # Unit test suite (7 tests)
+├── starship-geo-sat/      # Geostationary satellite operations & Türksat incident mitigations
+│   ├── starship_geo_sat/  # Launch abort, inclined orbit, electric orbit raising, desat, RFI guard
+│   │   ├── launch_abort_detector.py    # Cryogenic upper-stage turbopump abort (Türksat 1A)
+│   │   ├── inclined_orbit_dynamics.py  # Lunisolar drift & ground antenna tracking (Türksat 1B/1C)
+│   │   ├── electric_orbit_raising.py   # Hall-effect spiral & Van Allen radiation (Türksat 5A/5B)
+│   │   ├── reaction_wheel_desat.py     # GEO zero-B reaction wheel desaturation (Türksat 6A)
+│   │   └── rfi_transponder_guard.py    # Cross-polarization leakage & Ka-band rain fade AUPC
+│   └── tests/             # Unit test suite (14 tests)
 ├── visualizer/            # Standalone 3D Three.js flight & slosh browser visualizer
 │   └── index.html         # Interactive real-time 3D telemetry and tank cutaway app
-├── run_pipeline.py        # 6-phase end-to-end orchestration runner
+├── run_pipeline.py        # 7-phase end-to-end orchestration runner
 ├── yapacagin isler.md     # Milestone tracking specification
 ├── yaptigin isler.md      # Completed technical report & verification logs
 ├── devam notu.md          # Architectural handover notes for developers
@@ -102,7 +133,7 @@ open-starship/
 
 Requires Python 3.9+. Runs with zero required external dependencies.
 
-### 1. Run 6-Phase End-to-End Pipeline
+### 1. Run 7-Phase End-to-End Pipeline
 
 ```bash
 python3 run_pipeline.py pipeline_artifacts
@@ -115,6 +146,7 @@ This single command executes:
 4. **Mechazilla Chopstick Catch**: Evaluates pin capture tolerances ($\pm 0.5\text{ m}$ lateral, $< 0.4\text{ m/s}$ descent) and structural contact loads.
 5. **In-Space Propellant Transfer**: Simulates microgravity RCS ullage settling (Bond number $Bo > 50$) and pressure-driven cryogenic mass transfer from Tanker to Depot.
 6. **Incident Safety Interlocks**: Validates hold-down breakaway cutoff, touchdown consensus, actuator jam reallocation, engine-out gimbal trim, and debris footprint geofencing to `pipeline_artifacts/incident_safety_validation.json`.
+7. **Geostationary Satellite Operations**: Validates upper-stage abort detection, inclined orbit tracking, electric orbit raising radiation damage, reaction wheel desaturation, and transponder interference protection to `pipeline_artifacts/geo_satellite_validation.json`.
 
 ### 2. Launch 3D Flight & Slosh Visualizer
 
@@ -157,6 +189,13 @@ python3 -m starship_cryo_slosh.cli --telemetry ../starship-flip-gnc/telemetry.js
 cd starship-tps-vision
 python3 -m unittest discover -s tests
 python3 -m starship_tps_vision.cli --telemetry ../starship-flip-gnc/telemetry.json --export-markdown work_order.md
+```
+
+### 4. starship-geo-sat
+
+```bash
+cd starship-geo-sat
+python3 -m unittest discover -s tests
 ```
 
 ---
