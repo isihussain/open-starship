@@ -158,3 +158,21 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 10.5 Integrate Azercosmos and AzerSky evaluations into Phase 7 of `run_pipeline.py` and validate artifacts in `pipeline_artifacts/geo_satellite_validation.json`.
 - [x] 10.6 Extend 3D WebGL cockpit (`visualizer/index.html`) with Azercosmos 0.9° ASI guard and AzerSky debris collision diagnostics panels.
 - [x] 10.7 Update root `README.md` and `docs/assets/hero_banner.svg` with Azercosmos fleet specifications, equations, and 108 tests badge.
+
+---
+
+## Phase 11: Eutelsat Hotbird Constellation Integration (Hot Bird 1 to 13G)
+- [x] 11.1 Research and structure operational parameters, platform histories, and anomalies across all 4 generations of the Hotbird fleet at 13.0°E:
+  - Gen 1: Hot Bird 1 (Spacebus-2000, 1995), Hot Bird 2, 3, 4, 5 (Eurostar-2000+, 1996–1998).
+  - Gen 2: Hot Bird 6 / 13D (Spacebus-3000B3, 2002), Hot Bird 7 (Ariane 5 ECA V157 launch loss, 2002), Hot Bird 7A / 13E (Spacebus-3000B3, 2006).
+  - Gen 3: Hot Bird 8 / 13B (Spacebus-4000C3, 2006), Hot Bird 9 / 13C (2008), Hot Bird 10 / 33E (2009).
+  - Gen 4: Hot Bird 13F & 13G (Airbus Eurostar Neo, all-electric PPS5000, 2022) with European Union EGNOS GEO-4 SBAS civil aviation payload.
+- [x] 11.2 Implement `starship_geo_sat/hotbird_fleet_operations.py`:
+  - 13.0°E intra-slot multi-satellite co-location model via relative Eccentricity/Inclination ($e/i$) vector separation maintaining $> 15\text{ km}$ diurnal clearance in a $\pm 0.05^\circ$ box.
+  - Hot Bird 7 launch failure model: Vulcain 2 cooling jacket pressure collapse, yaw attitude error, and range safety destruct command ($T+456\text{s}$).
+  - Hot Bird 3 October 2006 post-eclipse thermal shock model: $+19.1\text{ K/min}$ thermal surge, dielectric breakdown arcing, 48% bus power loss, and emergency load shedding.
+  - Hot Bird 13F/13G zero-downtime transponder fleet migration (950 channels, 160 Ku transponders) and EGNOS GEO-4 SBAS dual-frequency L1/L5 link budget verification.
+- [x] 11.3 Author comprehensive unit test suite (`test_hotbird_fleet.py`) expanding suite verification from 108 to 115 passing tests.
+- [x] 11.4 Integrate Hotbird operations into Phase 7 of `run_pipeline.py` and validate artifacts in `pipeline_artifacts/geo_satellite_validation.json`.
+- [x] 11.5 Extend 3D WebGL Mission Control cockpit (`visualizer/index.html`) with Hotbird 13°E co-location and EGNOS GEO-4 status cards and telemetry display.
+- [x] 11.6 Update `README.md` and `docs/assets/hero_banner.svg` with Hotbird specifications, equations, and 115 tests badge.

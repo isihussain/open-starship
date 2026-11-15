@@ -63,6 +63,14 @@ from .azersky_debris_conjunction import (
     DebrisImpactTelemetry,
     DebrisAnomalyReport,
 )
+from .hotbird_fleet_operations import (
+    HotbirdFleetCoordinator,
+    HotbirdSatelliteSpec,
+    OrbitalVectorState,
+    ColocationSeparationReport,
+    EclipseThermalShockReport,
+    FleetMigrationReport,
+)
 
 __all__ = [
     "LaunchAbortDetector",
@@ -96,4 +104,10 @@ __all__ = [
     "AzerSkyOrbitSpec",
     "DebrisImpactTelemetry",
     "DebrisAnomalyReport",
+    "HotbirdFleetCoordinator",
+    "HotbirdSatelliteSpec",
+    "OrbitalVectorState",
+    "ColocationSeparationReport",
+    "EclipseThermalShockReport",
+    "FleetMigrationReport",
 ]

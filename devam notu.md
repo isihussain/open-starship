@@ -56,7 +56,7 @@ The suite models the primary physical, operational, and safety bottlenecks acros
 ```bash
 cd /Users/johndoe/.gemini/antigravity/scratch/open-starship
 
-# Run all 99 unit tests across the 4 packages:
+# Run all 115 unit tests across the 4 packages:
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-flip-gnc/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-cryo-slosh/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-tps-vision/tests
@@ -102,8 +102,16 @@ open visualizer/index.html
    - *Architecture:* Evaluates ITU-R S.580/S.465 off-axis sidelobe discrimination, computes $(C/I)_{\text{ASI}}$, selects DVB-S2X adaptive coding and modulation (ACM: 32APSK, 16APSK, 8PSK, QPSK), and coordinates automated failover between Absheron Main Teleport and Nakhchivan Reserve Teleport.
 
 7. **`azersky_debris_conjunction.py` (AzerSky / SPOT 7):**
-   - *Failure Mode:* Sudden communication loss on March 17, 2023 at 19:34–20:48 UTC while the satellite remained on its nominal 694.9 km Sun-Synchronous Orbit (confirmed by US Space Surveillance Network), indicating an untracked hypervelocity micro-debris strike severing the main power harness without catastrophic hull disintegration.
+   - *Failure Mode:* Sudden communication loss on March 17, 2023 at 19:34–20:48 UTC while the satellite remained on its nominal 694.9 km Sun-Synchronous Orbit (confirmed by US Space Surveillance Network), indicating an untracked hypervelocity micro-debris strike severing main power lines without catastrophic hull disintegration.
    - *Architecture:* Calculates hypervelocity impact kinetic energy ($E_k = \frac{1}{2} m v^2$) and Cour-Palais penetration depth in aluminum bus skin, estimates post-impact tumbling rate ($\boldsymbol{\omega}_{\text{tumble}}$), and commands Earth observation continuity fallback to twin SPOT-6 imagery and Azersky-2 constellation tasking.
+
+8. **`hotbird_fleet_operations.py` (Eutelsat Hot Bird 1 through 13G):**
+   - *Operational Bottleneck & Failure Modes:*
+     - Co-locating multiple high-power Ku/Ka-band broadcast spacecraft in the exact same 13.0° East orbital box ($\pm 0.05^\circ$ longitudinal deadband) creates severe physical collision hazards ($< 5\text{ km}$ unmitigated misses) and RF cross-talk.
+     - Hot Bird 7 (Ariane 5 ECA maiden flight V157 launch loss): Vulcain 2 cryogenic engine nozzle coolant tube rupture led to structural burn-through, loss of attitude control, and range safety destruct at $T+456\text{s}$.
+     - Hot Bird 3 (October 2006 post-eclipse thermal shock): Rapid $+19.1\text{ K/min}$ sunrise solar heating after 72 minutes of cryogenic shadow cooling triggered dielectric breakdown and sustained solar wing arcing, destroying 48% of bus electrical power.
+     - Modern Eurostar Neo migration (Hot Bird 13F & 13G): Seamlessly transferring 950+ television channels from legacy Spacebus satellites without broadcast interruption while deploying EGNOS GEO-4 SBAS navigation payloads.
+   - *Architecture:* Solves relative eccentricity and inclination ($e/i$) vector separation dynamics guaranteeing $d_{\text{min}} \ge 15.0\text{ km}$ miss distances, simulates launch trajectory abort limits, models post-eclipse thermal gradient dielectric stress, and verifies Eurostar Neo full-fleet channel transition metrics.
 
 ---
 

@@ -483,7 +483,7 @@
     <!-- ── GEO-SAT PANEL ── -->
     <div class="panel-page" id="panel-geosat">
       <div class="panel-section">
-        <div class="panel-title">Regional Satellite Fleets (Türksat &amp; Azercosmos)</div>
+        <div class="panel-title">Regional Satellite Fleets (Türksat, Azercosmos &amp; Eutelsat Hotbird)</div>
         <div class="status-grid">
           <div class="status-card">
             <div class="status-card-title">Abort Detector</div>
@@ -516,6 +516,14 @@
           <div class="status-card">
             <div class="status-card-title">AzerSky Status</div>
             <div class="status-card-val warn" id="g-azersky">DEBRIS HIT</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">Hotbird 13°E</div>
+            <div class="status-card-val ok" id="g-hotbird">18.7 km OK</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">EGNOS GEO-4</div>
+            <div class="status-card-val sky" id="g-egnos">L1/L5 SBAS</div>
           </div>
         </div>
       </div>
@@ -601,10 +609,23 @@
         <div class="hud-row"><span class="hud-label">Incident Timestamp</span><span class="hud-val">17 Mar 2023 19:34 UTC</span></div>
         <div class="hud-row"><span class="hud-label">Kinetic Impact Energy</span><span class="hud-val crit">147.8 kJ (~35.3g TNT)</span></div>
         <div class="hud-row"><span class="hud-label">Shield Penetration</span><span class="hud-val crit">10.68 mm (Skin: 1.6 mm)</span></div>
-        <div class="hud-row"><span class="hud-label">Bus Voltage</span><span class="hud-val crit">0.0 V (Harness Severed)</span></div>
+        <div class="hud-row"><span class="hud-label">Bus Voltage</span><span class="hud-val crit">0.0 V (Power Feed Severed)</span></div>
         <div class="hud-row"><span class="hud-label">US SSN Radar Tracking</span><span class="hud-val ok">1 Object (Hull Intact)</span></div>
         <div class="hud-row"><span class="hud-label">Anomaly Diagnosis</span><span class="hud-val warn">Hypervelocity Micro-Debris Collision</span></div>
         <div class="hud-row"><span class="hud-label">Service Continuity</span><span class="hud-val sky">SPOT-6 Twin Handoff / Azersky-2</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">13.0°E Multi-Spacecraft Co-Location &amp; Migration — Eutelsat Hotbird</div>
+        <div class="hud-row"><span class="hud-label">Co-located Slot</span><span class="hud-val sky">13.0° E (Hot Bird 1 to 13G)</span></div>
+        <div class="hud-row"><span class="hud-label">Active Spacecraft Pair</span><span class="hud-val">Hot Bird 13F &amp; 13G (Eurostar Neo)</span></div>
+        <div class="hud-row"><span class="hud-label">e/i Separation Miss Dist.</span><span class="hud-val ok">18.7 km (&gt; 15.0 km Safety Boundary)</span></div>
+        <div class="hud-row"><span class="hud-label">Relative e-Vector</span><span class="hud-val">|Δe| = 0.00057 (Parallel offset)</span></div>
+        <div class="hud-row"><span class="hud-label">Relative i-Vector</span><span class="hud-val">|Δi| = 0.00071 rad</span></div>
+        <div class="hud-row"><span class="hud-label">Hot Bird 7 (2002 Loss)</span><span class="hud-val crit">Ariane 5 ECA V157 Nozzle Rupture</span></div>
+        <div class="hud-row"><span class="hud-label">Hot Bird 3 (2006 Anomaly)</span><span class="hud-val warn">+19.1 K/min Thermal Shock Arcing</span></div>
+        <div class="hud-row"><span class="hud-label">Eurostar Neo Migration</span><span class="hud-val ok">950 Channels (Zero Downtime)</span></div>
+        <div class="hud-row"><span class="hud-label">EGNOS GEO-4 SBAS</span><span class="hud-val sky">Active (L1: +6.4 dB, L5: +5.8 dB)</span></div>
       </div>
     </div>
 

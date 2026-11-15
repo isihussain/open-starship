@@ -94,6 +94,10 @@ from starship_geo_sat.azersky_debris_conjunction import (
     AzerSkyDebrisAnalyzer,
     DebrisImpactTelemetry,
 )
+from starship_geo_sat.hotbird_fleet_operations import (
+    HotbirdFleetCoordinator,
+    OrbitalVectorState,
+)
 
 
 def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
@@ -418,6 +422,14 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     )
     azersky_report = azersky_analyzer.diagnose_anomaly(azersky_telemetry)
 
+    # H. Eutelsat Hotbird 13°E Multi-Spacecraft Co-location & Eurostar Neo Migration
+    hotbird_coord = HotbirdFleetCoordinator()
+    hb_sat_13f = OrbitalVectorState("Hot Bird 13F", 13.0, ex=0.00055, ey=0.00010, ix=0.00065, iy=0.00015)
+    hb_sat_13g = OrbitalVectorState("Hot Bird 13G", 13.0, ex=0.00010, ey=0.00045, ix=0.00015, iy=0.00065)
+    hb_colocation = hotbird_coord.evaluate_colocation_ei_separation(hb_sat_13f, hb_sat_13g, safety_clearance_km=15.0)
+    hb3_shock = hotbird_coord.simulate_post_eclipse_thermal_shock("Hot Bird 3", duration_shadow_min=72.0, insulation_microcracked=True)
+    hb_migration = hotbird_coord.evaluate_fleet_migration_to_eurostar_neo(migrated_channel_count=950)
+
     geo_summary = {
         "launch_abort_detector": {
             "nominal_thrust": abort_eval.nominal_thrust,
@@ -472,6 +484,17 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
             "service_continuity_plan": azersky_report.service_continuity_plan,
             "status_message": azersky_report.status_message,
         },
+        "hotbird_fleet_operations": {
+            "colocation_slot_deg": 13.0,
+            "satellite_pair": list(hb_colocation.satellite_pair),
+            "minimum_separation_distance_km": hb_colocation.minimum_radial_normal_distance_km,
+            "safe_stationkeeping_clearance": hb_colocation.safe_stationkeeping_clearance,
+            "hotbird3_arcing_failure": hb3_shock.solar_wing_electrical_failure,
+            "hotbird3_available_bus_power_fraction": hb3_shock.available_bus_power_fraction,
+            "eurostar_neo_migrated_channels": hb_migration.channels_switched_zero_downtime,
+            "egnos_geo4_sbas_active": hb_migration.egnos_geo4_sbas_active,
+            "status_message": hb_colocation.status_message,
+        },
     }
 
     geo_json_path = out_path / "geo_satellite_validation.json"
@@ -485,6 +508,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     print(f"      -> Transponder Link Guard: XPI={rfi_action.cross_polar_isolation_db:.1f} dB (AUPC: +{rfi_action.aupc_recommended_boost_db:.1f} dB)")
     print(f"      -> Azercosmos 0.9° Coordination: Separation={asi_assessment.angular_separation_deg:.2f}° (C/I={asi_assessment.carrier_to_adjacent_interference_db:.1f} dB, Teleport: {teleport_redundancy['active_station']})")
     print(f"      -> AzerSky Debris Anomaly: {azersky_report.anomaly_classification} (E_k={azersky_report.kinetic_energy_joules/1000:.1f} kJ, Continuity: {azersky_report.service_continuity_plan})")
+    print(f"      -> Hotbird 13°E Co-location: Min Clearance={hb_colocation.minimum_radial_normal_distance_km:.1f} km (Safe: {hb_colocation.safe_stationkeeping_clearance}, EGNOS SBAS: {hb_migration.egnos_geo4_sbas_active})")
     print(f"      -> Geostationary & Fleet Validation Saved: {geo_json_path}")
 
     # Phase 8: Pipeline Artifact Verification & Schema Integrity Gate
