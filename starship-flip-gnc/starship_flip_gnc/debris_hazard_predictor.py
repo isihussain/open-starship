@@ -138,10 +138,13 @@ class DebrisHazardPredictor:
         dx_target_km = self.safe_target_km[0] - x_iip
         dy_target_km = self.safe_target_km[1] - y_iip
 
+        # Drag factor damping for divert velocity calculation:
+        drag_damping = max(0.82, 1.0 - (120.0 / max(100.0, kin.ballistic_coefficient)))
+
         if t_fall > 1.0:
             # dv = dx / (t_fall * drag_damping)
-            dv_x = (dx_target_km * 1000.0) / t_fall
-            dv_y = (dy_target_km * 1000.0) / t_fall
+            dv_x = (dx_target_km * 1000.0) / (t_fall * drag_damping)
+            dv_y = (dy_target_km * 1000.0) / (t_fall * drag_damping)
         else:
             dv_x = 0.0
             dv_y = 0.0

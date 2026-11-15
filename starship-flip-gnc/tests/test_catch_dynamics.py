@@ -44,6 +44,21 @@ class TestCatchDynamics(unittest.TestCase):
         self.assertFalse(res.caught)
         self.assertIn("descent rate", res.message)
 
+    def test_contact_force_includes_static_gravity_support(self):
+        # Even at zero velocity, resting on chopstick pins requires supporting gravitational weight
+        mass_kg = 100_000.0
+        res = self.solver.evaluate_capture(
+            x_m=0.0,
+            z_m=45.0,
+            vx_mps=0.0,
+            vz_mps=0.0,
+            pitch_deg=0.0,
+            vehicle_mass_kg=mass_kg,
+        )
+        # Expected force is mass * g0 = 100,000 * 9.80665 = 980,665 N
+        expected_static_weight = mass_kg * 9.80665
+        self.assertAlmostEqual(res.contact_impulse_n, expected_static_weight, places=1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -80,6 +80,20 @@ class TestTouchdownValidationGate(unittest.TestCase):
         self.assertTrue(result.override_commanded)
         self.assertFalse(result.contact_verified)
 
+    def test_ins_sensor_divergence_detection(self):
+        # Radar and LiDAR agree closely, but INS drifts by 4 meters
+        sensors = AltimeterSensorSuite(
+            timestamp_s=35.0,
+            radar_altimeter_m=3.0,
+            lidar_altimeter_m=3.1,
+            ins_integrated_alt_m=7.1,
+            contact_force_n=0.0,
+            contact_switches_engaged=0,
+        )
+        result = self.gate.evaluate(sensors, commanded_engine_cutoff=False)
+        # Discrepancy must reflect the full 4.1m divergence, not just |lidar - radar| = 0.1m
+        self.assertAlmostEqual(result.discrepancy_m, 4.1, places=1)
+
 
 if __name__ == "__main__":
     unittest.main()

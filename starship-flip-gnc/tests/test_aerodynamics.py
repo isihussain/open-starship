@@ -74,6 +74,20 @@ class TestAerodynamics(unittest.TestCase):
         self.assertNotEqual(forces_with_wind["fx_aero"], 0.0)
         self.assertGreater(forces_with_wind["dynamic_pressure"], forces_no_wind["dynamic_pressure"])
 
+    def test_aerodynamic_lift_sign_reversal_with_pitch_angle(self):
+        # Symmetrical pitch tilts during vertical descent should produce opposing lateral lift forces
+        forces_tilt_pos = self.aero.compute_forces(
+            vx=0.0, vz=-60.0, theta=math.radians(15.0), altitude=1000.0, atmosphere=self.atmos
+        )
+        forces_tilt_neg = self.aero.compute_forces(
+            vx=0.0, vz=-60.0, theta=math.radians(-15.0), altitude=1000.0, atmosphere=self.atmos
+        )
+
+        # Positive pitch produces positive fx_aero; negative pitch produces negative fx_aero
+        self.assertGreater(forces_tilt_pos["fx_aero"], 0.0)
+        self.assertLess(forces_tilt_neg["fx_aero"], 0.0)
+        self.assertAlmostEqual(forces_tilt_pos["fx_aero"], -forces_tilt_neg["fx_aero"], places=1)
+
 
 if __name__ == "__main__":
     unittest.main()

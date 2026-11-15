@@ -64,9 +64,11 @@ class MechazillaCatchSolver:
         vel_mag = math.hypot(vx_mps, vz_mps)
         pitch_err = abs(pitch_deg)
 
-        # Contact impulse approximation (damped pin deceleration over dt ~ 0.15s):
+        # Contact impulse calculation (dynamic deceleration + static gravitational load support):
         dt_capture = 0.15
-        contact_force = vehicle_mass_kg * (vel_mag / dt_capture)
+        g0 = 9.80665
+        dynamic_decel = vel_mag / dt_capture
+        contact_force = vehicle_mass_kg * (dynamic_decel + g0)
 
         # Tolerance checks:
         lat_ok = lat_err <= self.envelope.max_lateral_offset_m

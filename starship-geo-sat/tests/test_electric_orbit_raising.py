@@ -57,6 +57,20 @@ class TestElectricOrbitRaisingSimulator(unittest.TestCase):
         self.assertGreater(rate_inner, rate_low)
         self.assertGreater(rate_outer, rate_geo)
 
+    def test_radiation_exposure_integrates_full_step_duration(self):
+        # 1-day step should accumulate 86,400s of radiation exposure, regardless of thruster duty cycle
+        history = self.sim.simulate_transfer(
+            gto_perigee_km=3000.0,
+            gto_apogee_km=3000.0,
+            gto_inclination_deg=0.0,
+            simulation_step_days=1.0,
+            max_duration_days=1.0,
+        )
+        report = history[0]
+        expected_rate = self.sim._estimate_belt_fluence_rate(3000.0)
+        expected_fluence = expected_rate * 86_400.0
+        self.assertAlmostEqual(report.cumulative_1mev_fluence, expected_fluence, delta=expected_fluence * 0.05)
+
 
 if __name__ == "__main__":
     unittest.main()

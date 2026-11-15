@@ -117,35 +117,39 @@ class ElectricOrbitRaisingSimulator:
             accel = (thrust / mass) / 1000.0    # km/s^2
             orbital_period_s = 2.0 * math.pi * math.sqrt(a**3 / self.EARTH_MU)
 
-            # Daily energy addition
+            # Active thrusting and total exposure seconds across this simulation step:
+            active_seconds_step = 86_400.0 * self.thruster.duty_cycle_fraction * simulation_step_days
+            total_seconds_step = 86_400.0 * simulation_step_days
+
+            # Step energy addition
             v_circ = math.sqrt(self.EARTH_MU / a) # km/s
-            delta_v_day = accel * active_seconds_per_day
+            delta_v_step = accel * active_seconds_step
 
             # Semi-major axis growth:
-            da_day = (2.0 * a * v_circ * delta_v_day) / (self.EARTH_MU / a)
-            a = min(r_geo, a + da_day)
+            da_step = (2.0 * a * v_circ * delta_v_step) / (self.EARTH_MU / a)
+            a = min(r_geo, a + da_step)
 
             # Circularization and inclination reduction:
             # Circularize by raising perigee faster than apogee:
             if rp < r_geo:
-                rp = min(r_geo, rp + (da_day * 1.5))
+                rp = min(r_geo, rp + (da_step * 1.5))
             ra = (2.0 * a) - rp
             ra = min(r_geo, ra)
 
             # Plane change rate:
             if inc > 0.05:
-                dinc_day = (0.015 * delta_v_day * 1000.0) / v_circ  # deg/day
-                inc = max(0.0, inc - dinc_day)
+                dinc_step = (0.015 * delta_v_step * 1000.0) / v_circ  # deg
+                inc = max(0.0, inc - dinc_step)
 
             # Propellant consumed:
-            fuel_used_day = mdot * active_seconds_per_day
-            mass = max(self.thruster.initial_wet_mass_kg * 0.70, mass - fuel_used_day)
+            fuel_used_step = mdot * active_seconds_step
+            mass = max(self.thruster.initial_wet_mass_kg * 0.70, mass - fuel_used_step)
 
-            # Calculate radiation fluence accumulated during this day:
-            # Fluence rate is highest when perigee/apogee intersects belt peaks
+            # Calculate radiation fluence accumulated during this step:
+            # Spacecraft remains inside radiation environment 24 hours/day (total_seconds_step):
             alt_mean = (hp + ha) / 2.0
             fluence_rate = self._estimate_belt_fluence_rate(alt_mean)
-            cumulative_fluence += fluence_rate * active_seconds_per_day
+            cumulative_fluence += fluence_rate * total_seconds_step
 
             # Solar cell power degradation equation:
             # P(t) = P0 * [1 - C * ln(1 + Phi / Phi0)]

@@ -65,9 +65,9 @@ class TouchdownValidationGate:
         """
         Validates engine cutoff request against multi-channel sensors and mechanical contact.
         """
-        # 1. Detect plume/dust backscatter on radar altimeter:
-        # If radar reads near-zero while LiDAR and INS still report several meters:
-        divergence = abs(sensors.lidar_altimeter_m - sensors.radar_altimeter_m)
+        # 1. Detect plume/dust backscatter and sensor divergence across all channels:
+        sensor_list = [sensors.radar_altimeter_m, sensors.lidar_altimeter_m, sensors.ins_integrated_alt_m]
+        divergence = max(sensor_list) - min(sensor_list)
         plume_anomaly = (
             sensors.radar_altimeter_m < 0.8
             and sensors.lidar_altimeter_m > self.max_divergence

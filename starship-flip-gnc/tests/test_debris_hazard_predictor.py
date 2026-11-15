@@ -113,6 +113,23 @@ class TestDebrisHazardPredictor(unittest.TestCase):
         # Heavier stage (higher ballistic coefficient) penetrates atmosphere with less drag deceleration
         self.assertGreater(x_heavy, x_light)
 
+    def test_divert_correction_accounts_for_drag_damping(self):
+        kin = KinematicVector(
+            altitude_m=40_000.0,
+            downrange_km=100.0,
+            crossrange_km=0.0,
+            vx_mps=1200.0,
+            vy_mps=0.0,
+            vz_mps=-50.0,
+            ballistic_coefficient=300.0,
+        )
+        report = self.predictor.evaluate_trajectory(kin)
+        dv_x, _ = report.divert_correction_mps
+        # Divert velocity must be greater than simple vacuum estimation (dx * 1000 / t_fall) due to drag damping
+        dx_km = self.predictor.safe_target_km[0] - report.iip_downrange_km
+        vacuum_dv_x = (dx_km * 1000.0) / report.time_to_impact_s
+        self.assertGreater(abs(dv_x), abs(vacuum_dv_x))
+
 
 if __name__ == "__main__":
     unittest.main()

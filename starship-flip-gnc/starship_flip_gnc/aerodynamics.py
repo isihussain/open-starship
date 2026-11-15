@@ -172,10 +172,13 @@ class AerodynamicModel:
         f_drag_x = -drag_force * uv_x
         f_drag_z = -drag_force * uv_z
 
-        # Lift components (perpendicular to relative velocity, rotated +90 deg in vertical plane):
-        # Normal vector to (uv_x, uv_z) is (-uv_z, uv_x)
-        f_lift_x = -lift_force * uv_z
-        f_lift_z = lift_force * uv_x
+        # Lift direction: perpendicular to relative velocity, oriented towards suction side.
+        # 2D cross product of relative airspeed and body vector determines signed lateral pitch:
+        cross_rel_body = uv_x * body_z - uv_z * body_x
+        side = 1.0 if cross_rel_body >= 0.0 else -1.0
+
+        f_lift_x = side * (-lift_force * uv_z)
+        f_lift_z = side * (lift_force * uv_x)
 
         # Stagnation point aerothermal heat flux (Sutton-Graves relation):
         r_nose = self.diameter / 2.0
