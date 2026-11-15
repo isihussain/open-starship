@@ -45,6 +45,18 @@ from .debris_hazard_predictor import (
     KinematicVector,
     DebrisFootprintReport,
 )
+from .atmospheric_entry import (
+    AtmosphericEntrySolver,
+    EntryState,
+    EntryCorridorLimits,
+    EntryTrajectoryProfile,
+)
+from .lunar_hls_landing import (
+    LunarHLSPlumeSolver,
+    LunarLandingState,
+    PlumeErosionReport,
+    EjectaRiskAssessment,
+)
 
 __all__ = [
     "StarshipVehicle",
@@ -87,4 +99,12 @@ __all__ = [
     "GeofencePolygon",
     "KinematicVector",
     "DebrisFootprintReport",
+    "AtmosphericEntrySolver",
+    "EntryState",
+    "EntryCorridorLimits",
+    "EntryTrajectoryProfile",
+    "LunarHLSPlumeSolver",
+    "LunarLandingState",
+    "PlumeErosionReport",
+    "EjectaRiskAssessment",
 ]

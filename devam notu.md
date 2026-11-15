@@ -56,7 +56,7 @@ The suite models the primary physical, operational, and safety bottlenecks acros
 ```bash
 cd /Users/johndoe/.gemini/antigravity/scratch/open-starship
 
-# Run all 115 unit tests across the 4 packages:
+# Run all 142 unit tests across the 4 packages:
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-flip-gnc/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-cryo-slosh/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-tps-vision/tests
@@ -65,10 +65,10 @@ PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-g
 # Run the 8-phase end-to-end pipeline with artifact validation:
 python3 run_pipeline.py pipeline_artifacts
 
-# Open the 5-tab mission control visualizer:
+# Open the 6-tab mission control visualizer:
 open visualizer/index.html
 # In the browser, use the tab bar to switch between:
-#   Flight & GNC | Cryo Slosh | Safety Interlocks | GEO-SAT | TPS Tiles
+#   Flight & GNC | Cryo Slosh | Safety Interlocks | GEO-SAT | TPS Tiles | Fault Injector
 # To load recorded pipeline data, click "Load JSON" in any tab and select:
 #   pipeline_artifacts/flight_telemetry.json
 ```
@@ -112,6 +112,14 @@ open visualizer/index.html
      - Hot Bird 3 (October 2006 post-eclipse thermal shock): Rapid $+19.1\text{ K/min}$ sunrise solar heating after 72 minutes of cryogenic shadow cooling triggered dielectric breakdown and sustained solar wing arcing, destroying 48% of bus electrical power.
      - Modern Eurostar Neo migration (Hot Bird 13F & 13G): Seamlessly transferring 950+ television channels from legacy Spacebus satellites without broadcast interruption while deploying EGNOS GEO-4 SBAS navigation payloads.
    - *Architecture:* Solves relative eccentricity and inclination ($e/i$) vector separation dynamics guaranteeing $d_{\text{min}} \ge 15.0\text{ km}$ miss distances, simulates launch trajectory abort limits, models post-eclipse thermal gradient dielectric stress, and verifies Eurostar Neo full-fleet channel transition metrics.
+
+9. **`optical_isl_crosslink.py` (Optical Inter-Satellite Links):**
+   - *Operational Domain:* Space optical communication links (Starlink Gen2, SDA Tranche, EDRS, GEO relays) using 1550 nm C-band Erbium-Doped Fiber Amplifiers (EDFA).
+   - *Architecture:* Computes free-space optical diffraction divergence, evaluates Pointing, Acquisition, and Tracking (PAT) loop loss under reaction wheel micro-vibration jitter ($1.8\ \mu\text{rad}$), evaluates relativistic orbital Doppler frequency shifts ($1.81\text{ GHz}$), and confirms link closure ($+27.1\text{ dB}$ margin, BER $< 10^{-12}$).
+
+10. **`station_keeping_prognostics.py` (GEO Station-Keeping & Fuel Lifetime Prognosis):**
+    - *Operational Domain:* Active orbital maintenance and End-of-Life (EOL) compliance across GEO fleets.
+    - *Architecture:* Calculates North-South lunisolar inclination drift ($48.2\text{ m/s/yr}$) and Earth triaxiality $J_{22}$ East-West drift requirements, reconciles propellant gauging via Tank Pressure-Volume-Temperature (PVT) helium ullage gas laws, and enforces IADC super-GEO graveyard disposal reserves ($+250\text{ km}$, $\Delta v \approx 9.4\text{ m/s}$) to forecast remaining operational days.
 
 ---
 

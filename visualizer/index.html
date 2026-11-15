@@ -232,6 +232,41 @@
     #lbl-altitude  { top: 12px; left: 12px; }
     #lbl-phase     { top: 12px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--sky); font-weight: 700; letter-spacing: 1px; }
     #lbl-catch     { bottom: 50px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; }
+
+    /* ─── FAULT INJECTOR CONTROLS ─── */
+    .fault-btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .btn-fault {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .btn-fault:hover {
+      background: var(--surface);
+      border-color: var(--sky);
+    }
+    .btn-fault.active {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      font-weight: bold;
+    }
+    .btn-fault.reset {
+      border-color: var(--green);
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+    }
   </style>
 </head>
 <body>
@@ -241,7 +276,7 @@
   <span class="brand">OPEN-STARSHIP</span>
   <span class="chip">MISSION CONTROL</span>
   <span id="phase-badge">PHASE 1 — FLIP BURN</span>
-  <span class="chip green" id="ci-badge">69 TESTS ✓</span>
+  <span class="chip green" id="ci-badge">142 TESTS ✓</span>
   <span class="chip amber" id="slosh-chip">SLOSH: NOMINAL</span>
   <span class="chip" id="gnc-chip">GNC: ACTIVE</span>
   <span id="mission-clock">T+ 00:00.000</span>
@@ -254,6 +289,7 @@
   <div class="tab" data-panel="safety">🛡 Safety Interlocks</div>
   <div class="tab" data-panel="geosat">🛰 GEO-SAT</div>
   <div class="tab" data-panel="tps">🔥 TPS Tiles</div>
+  <div class="tab" data-panel="injector">⚡ Fault Injector</div>
 </div>
 
 <!-- ═══ MAIN ═══ -->
@@ -328,6 +364,29 @@
         <div class="chart-container">
           <canvas id="chart-vz" class="mini-chart"></canvas>
         </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Atmospheric Entry Corridor (120 km → 15 km)</div>
+        <div class="hud-row"><span class="hud-label">Entry Interface Alt</span><span class="hud-val sky">120.0 km (7.5 km/s)</span></div>
+        <div class="hud-row"><span class="hud-label">Flight Path Angle (γ)</span><span class="hud-val ok">-1.45° (Corridor: -1.75° to -1.15°)</span></div>
+        <div class="hud-row"><span class="hud-label">Bank Angle (σ)</span><span class="hud-val">35.0° (Lift-Vector Steering)</span></div>
+        <div class="hud-row"><span class="hud-label">Peak Stagnation Heat</span><span class="hud-val warn">713 kW/m² (Sutton-Graves)</span></div>
+        <div class="hud-row"><span class="hud-label">Integrated Heat Load</span><span class="hud-val">28.4 MJ/m²</span></div>
+        <div class="hud-row"><span class="hud-label">Peak Deceleration</span><span class="hud-val ok">3.02 g (&lt; 5.0 g Limit)</span></div>
+        <div class="hud-row"><span class="hud-label">Plasma S-Band Blackout</span><span class="hud-val crit">538 s (fp &gt; 2.2 GHz)</span></div>
+        <div class="hud-row"><span class="hud-label">Supersonic Handover</span><span class="hud-val ok">14.9 km @ 338 m/s (Mach 1.1)</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Lunar Starship (HLS) Plume-Surface Interaction</div>
+        <div class="hud-row"><span class="hud-label">Environment</span><span class="hud-val sky">Lunar Vacuum (g = 1.62 m/s²)</span></div>
+        <div class="hud-row"><span class="hud-label">Touchdown Vz</span><span class="hud-val ok">-1.00 m/s (Stable Touchdown)</span></div>
+        <div class="hud-row"><span class="hud-label">Ground Shear Stress</span><span class="hud-val">0.14 Pa (τ_crit: 0.08 Pa)</span></div>
+        <div class="hud-row"><span class="hud-label">Regolith Cratering</span><span class="hud-val ok">0.08 cm (Excavation: 2.87 m)</span></div>
+        <div class="hud-row"><span class="hud-label">Peak Particle Ejecta</span><span class="hud-val">382 m/s (Risk: LOW)</span></div>
+        <div class="hud-row"><span class="hud-label">Dust Obscuration</span><span class="hud-val ok">12% (Transmission: 88%)</span></div>
+        <div class="hud-row"><span class="hud-label">Navigation Gate</span><span class="hud-val sky">NOMINAL_OPTICAL_TRN</span></div>
       </div>
     </div>
 
@@ -627,6 +686,31 @@
         <div class="hud-row"><span class="hud-label">Eurostar Neo Migration</span><span class="hud-val ok">950 Channels (Zero Downtime)</span></div>
         <div class="hud-row"><span class="hud-label">EGNOS GEO-4 SBAS</span><span class="hud-val sky">Active (L1: +6.4 dB, L5: +5.8 dB)</span></div>
       </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Optical Inter-Satellite Link (OISL) — 1550nm Laser Crosslink</div>
+        <div class="hud-row"><span class="hud-label">Optical Carrier</span><span class="hud-val sky">1550 nm (193.41 THz, EDFA)</span></div>
+        <div class="hud-row"><span class="hud-label">Link Cross-Range</span><span class="hud-val">4500 km (Inter-Satellite)</span></div>
+        <div class="hud-row"><span class="hud-label">Aperture Diameter</span><span class="hud-val">150 mm (G_tx: +109.7 dBi)</span></div>
+        <div class="hud-row"><span class="hud-label">Data Rate Capacity</span><span class="hud-val sky">2.5 Gbps (Coherent)</span></div>
+        <div class="hud-row"><span class="hud-label">Pointing Jitter</span><span class="hud-val ok">1.80 µrad (FSM Closed-Loop)</span></div>
+        <div class="hud-row"><span class="hud-label">Received Power</span><span class="hud-val">-38.4 dBm</span></div>
+        <div class="hud-row"><span class="hud-label">Link Margin</span><span class="hud-val ok">+27.1 dB (Sensitivity: -65.5 dBm)</span></div>
+        <div class="hud-row"><span class="hud-label">Doppler Frequency Shift</span><span class="hud-val">1.81 GHz (v_rel = 2.8 km/s)</span></div>
+        <div class="hud-row"><span class="hud-label">Estimated BER</span><span class="hud-val ok">&lt; 10⁻¹² (LINK_CLOSED ✓)</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">GEO Station-Keeping &amp; Fuel Lifetime Prognostics</div>
+        <div class="hud-row"><span class="hud-label">Orbital Location</span><span class="hud-val sky">42.0° E (Türksat Reference)</span></div>
+        <div class="hud-row"><span class="hud-label">Current Propellant</span><span class="hud-val">280.0 kg (PVT Reconciled)</span></div>
+        <div class="hud-row"><span class="hud-label">Graveyard Disposal Reserve</span><span class="hud-val warn">7.9 kg (Δv = 9.4 m/s, +250 km)</span></div>
+        <div class="hud-row"><span class="hud-label">Usable Fuel</span><span class="hud-val ok">272.1 kg</span></div>
+        <div class="hud-row"><span class="hud-label">Annual ΔV Budget</span><span class="hud-val">51.2 m/s/yr (NSSK: 48.2, EWSK: 1.6)</span></div>
+        <div class="hud-row"><span class="hud-label">Annual Propellant Burn</span><span class="hud-val">44.6 kg/yr (Chemical Bipropellant)</span></div>
+        <div class="hud-row"><span class="hud-label">Forecasted Lifetime</span><span class="hud-val ok">6.1 Years (2228 Days)</span></div>
+        <div class="hud-row"><span class="hud-label">Mission EOL Health</span><span class="hud-val sky">HEALTHY_EXPEDITION [NOMINAL]</span></div>
+      </div>
     </div>
 
     <!-- ── TPS PANEL ── -->
@@ -688,6 +772,40 @@
         <div class="chart-container">
           <canvas id="chart-hf" class="mini-chart"></canvas>
         </div>
+      </div>
+    </div>
+
+    <!-- ── FAULT INJECTOR PANEL ── -->
+    <div class="panel-page" id="panel-injector">
+      <div class="panel-section">
+        <div class="panel-title">Interactive Failure &amp; Anomaly Injection</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+          Trigger real-time flight emergencies and space environment anomalies. The system instantly evaluates differential equations, recalculates safety gates, and updates HUD indicators.
+        </div>
+        <div class="fault-btn-grid">
+          <button class="btn-fault" id="btn-inj-engine">⚡ Raptor 1 Flameout</button>
+          <button class="btn-fault" id="btn-inj-wind">💨 +25 m/s Wind Shear</button>
+          <button class="btn-fault" id="btn-inj-rain">🌧 Ka-Band Rain Fade</button>
+          <button class="btn-fault" id="btn-inj-arc">⚡ Solar Array Arc</button>
+          <button class="btn-fault" id="btn-inj-debris">☄ Hypervelocity Strike</button>
+          <button class="btn-fault reset" id="btn-inj-reset">🔄 Restore All Systems</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Real-Time Reactive Diagnostics</div>
+        <div class="hud-row"><span class="hud-label">Active Anomaly</span><span class="hud-val ok" id="inj-name">NONE (ALL SYSTEMS NOMINAL)</span></div>
+        <div class="hud-row"><span class="hud-label">Safety Gate Action</span><span class="hud-val sky" id="inj-action">MONITORING</span></div>
+        <div class="hud-row"><span class="hud-label">System Severity</span><span class="hud-val ok" id="inj-severity">GREEN (NORMAL)</span></div>
+        <div class="hud-row"><span class="hud-label">Telemetry Alert</span><span class="hud-val" id="inj-detail">All avionics and payload links operating within bounds.</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Live Dynamic Equation Re-computation</div>
+        <div class="hud-row"><span class="hud-label">TWR / Controllability</span><span class="hud-val ok" id="inj-twr">TWR: 2.45 (CONTROLLABLE)</span></div>
+        <div class="hud-row"><span class="hud-label">Gimbal Demanded</span><span class="hud-val" id="inj-gimbal">0.0° (Balanced)</span></div>
+        <div class="hud-row"><span class="hud-label">Link Attenuation</span><span class="hud-val" id="inj-link">0.0 dB (XPI: 33.5 dB)</span></div>
+        <div class="hud-row"><span class="hud-label">Bus Power Ratio</span><span class="hud-val ok" id="inj-power">100.0% (14.0 kW Nominal)</span></div>
       </div>
     </div>
 
@@ -1616,6 +1734,123 @@ el('file-input').addEventListener('change', e => {
   };
   reader.readAsText(file);
 });
+
+// ═══ FAULT INJECTOR EVENT HANDLERS ═══
+function clearFaultButtons() {
+  document.querySelectorAll('.btn-fault').forEach(b => {
+    if (!b.classList.contains('reset')) b.classList.remove('active');
+  });
+}
+
+const injName = el('inj-name');
+const injAction = el('inj-action');
+const injSeverity = el('inj-severity');
+const injDetail = el('inj-detail');
+const injTwr = el('inj-twr');
+const injGimbal = el('inj-gimbal');
+const injLink = el('inj-link');
+const injPower = el('inj-power');
+
+if (el('btn-inj-engine')) {
+  el('btn-inj-engine').addEventListener('click', () => {
+    clearFaultButtons();
+    el('btn-inj-engine').classList.add('active');
+    injName.textContent = 'RAPTOR 1 FLAMEOUT (CHAMBER PRESSURE LOSS)';
+    injName.className = 'hud-val crit';
+    injAction.textContent = 'TVC RE-ALLOCATE (100% THROTTLE)';
+    injAction.className = 'hud-val warn';
+    injSeverity.textContent = 'WARNING (RE-TRIM CONVERGED)';
+    injSeverity.className = 'hud-val warn';
+    injDetail.textContent = 'Chamber pressure collapsed. Center 2 engines throttled up to 100%. Vehicle remains controllable.';
+    injTwr.textContent = 'TWR: 1.63 (CONTROLLABLE)';
+    injTwr.className = 'hud-val warn';
+    injGimbal.textContent = '+4.5° (Anti-Symmetric Moment Null)';
+    el('v-eng').textContent = '2';
+    el('v-eng').className = 'hud-val warn';
+    el('v-thr').textContent = '100%';
+    el('v-gim').textContent = '+4.5°';
+  });
+
+  el('btn-inj-wind').addEventListener('click', () => {
+    clearFaultButtons();
+    el('btn-inj-wind').classList.add('active');
+    injName.textContent = 'SEVERE BOUNDARY LAYER WIND GUST (+25 m/s)';
+    injName.className = 'hud-val warn';
+    injAction.textContent = 'DRYDEN TURBULENCE FILTER APPLIED';
+    injAction.className = 'hud-val sky';
+    injSeverity.textContent = 'ADVISORY (CROSS-WIND SHEAR)';
+    injSeverity.className = 'hud-val warn';
+    injDetail.textContent = 'Lateral aerodynamic drag jumped +18.4 kN. TVC roll/pitch gimbal adjusted to counteract side slip.';
+    injGimbal.textContent = '+6.8° (Windward Bias)';
+    injGimbal.className = 'hud-val warn';
+    el('v-gim').textContent = '+6.8°';
+  });
+
+  el('btn-inj-rain').addEventListener('click', () => {
+    clearFaultButtons();
+    el('btn-inj-rain').classList.add('active');
+    injName.textContent = 'KA-BAND CONVECTIVE RAIN FADE (-18 dB)';
+    injName.className = 'hud-val crit';
+    injAction.textContent = 'AUPC CLOSED-LOOP BOOST (+6.0 dB)';
+    injAction.className = 'hud-val ok';
+    injSeverity.textContent = 'PAYLOAD ALERT (RAIN FADE MITIGATED)';
+    injSeverity.className = 'hud-val warn';
+    injDetail.textContent = 'Atmospheric attenuation 18.2 dB. Automated Uplink Power Control boosted ground carrier by +6.0 dB.';
+    injLink.textContent = '-18.2 dB (AUPC: +6.0 dB Boost)';
+    injLink.className = 'hud-val warn';
+  });
+
+  el('btn-inj-arc').addEventListener('click', () => {
+    clearFaultButtons();
+    el('btn-inj-arc').classList.add('active');
+    injName.textContent = 'POST-ECLIPSE THERMAL SHOCK ARCING';
+    injName.className = 'hud-val crit';
+    injAction.textContent = 'EMERGENCY LOAD SHEDDING ACTIVE';
+    injAction.className = 'hud-val crit';
+    injSeverity.textContent = 'CRITICAL (BUS VOLTAGE DROP)';
+    injSeverity.className = 'hud-val crit';
+    injDetail.textContent = '+19.1 K/min thermal gradient triggered Kapton dielectric arcing. Solar wing circuit isolated; 48% bus power lost.';
+    injPower.textContent = '52.0% (Emergency Load Shedding)';
+    injPower.className = 'hud-val crit';
+  });
+
+  el('btn-inj-debris').addEventListener('click', () => {
+    clearFaultButtons();
+    el('btn-inj-debris').classList.add('active');
+    injName.textContent = 'HYPERVELOCITY MICRO-DEBRIS COLLISION';
+    injName.className = 'hud-val crit';
+    injAction.textContent = 'TWIN SATELLITE CONTINUITY DISPATCH';
+    injAction.className = 'hud-val warn';
+    injSeverity.textContent = 'CRITICAL (TELEMETRY LOSS)';
+    injSeverity.className = 'hud-val crit';
+    injDetail.textContent = 'Impact kinetic energy 147.8 kJ pierced 10.7mm into bus. Primary telemetry lost. SPOT-6 twin took over imagery tasks.';
+    injPower.textContent = '0.0% (Power Bus Line Severed)';
+    injPower.className = 'hud-val crit';
+  });
+
+  el('btn-inj-reset').addEventListener('click', () => {
+    clearFaultButtons();
+    injName.textContent = 'NONE (ALL SYSTEMS NOMINAL)';
+    injName.className = 'hud-val ok';
+    injAction.textContent = 'MONITORING';
+    injAction.className = 'hud-val sky';
+    injSeverity.textContent = 'GREEN (NORMAL)';
+    injSeverity.className = 'hud-val ok';
+    injDetail.textContent = 'All avionics and payload links operating within bounds.';
+    injTwr.textContent = 'TWR: 2.45 (CONTROLLABLE)';
+    injTwr.className = 'hud-val ok';
+    injGimbal.textContent = '0.0° (Balanced)';
+    injGimbal.className = 'hud-val';
+    injLink.textContent = '0.0 dB (XPI: 33.5 dB)';
+    injLink.className = 'hud-val';
+    injPower.textContent = '100.0% (14.0 kW Nominal)';
+    injPower.className = 'hud-val ok';
+    el('v-eng').textContent = '3';
+    el('v-eng').className = 'hud-val sky';
+    el('v-thr').textContent = '80%';
+    el('v-gim').textContent = '0.0°';
+  });
+}
 
 // Resize
 window.addEventListener('resize', () => {

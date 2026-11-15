@@ -98,6 +98,21 @@ from starship_geo_sat.hotbird_fleet_operations import (
     HotbirdFleetCoordinator,
     OrbitalVectorState,
 )
+from starship_flip_gnc.atmospheric_entry import (
+    AtmosphericEntrySolver,
+    EntryCorridorLimits,
+)
+from starship_flip_gnc.lunar_hls_landing import (
+    LunarHLSPlumeSolver,
+)
+from starship_geo_sat.optical_isl_crosslink import (
+    OpticalISLTransceiver,
+    OpticalISLConfig,
+)
+from starship_geo_sat.station_keeping_prognostics import (
+    StationKeepingPrognosticator,
+    StationKeepingConfig,
+)
 
 
 def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
@@ -125,9 +140,54 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     gnc_logger.export_json(str(telem_json_path))
     gnc_logger.export_csv(str(telem_csv_path))
 
+    # Atmospheric entry & aerothermal corridor evaluation (120 km -> 15 km)
+    entry_solver = AtmosphericEntrySolver()
+    entry_profile = entry_solver.propagate_entry(
+        entry_altitude_m=120000.0,
+        entry_velocity_ms=7500.0,
+        entry_gamma_rad=-0.0253,  # -1.45 deg
+        bank_angle_schedule_rad=0.6109,  # 35 deg
+        target_handover_altitude_m=15000.0,
+    )
+    entry_json_path = out_path / "atmospheric_entry_profile.json"
+    with open(entry_json_path, "w", encoding="utf-8") as f:
+        json.dump({
+            "success": entry_profile.success,
+            "outcome": entry_profile.outcome,
+            "peak_heat_flux_kw_m2": round(entry_profile.peak_heat_flux_w_m2 / 1000.0, 1),
+            "peak_g_load": entry_profile.peak_g_load,
+            "total_heat_load_mj_m2": round(entry_profile.total_heat_load_j_m2 / 1e6, 2),
+            "blackout_duration_s": entry_profile.blackout_duration_s,
+            "terminal_altitude_km": round(entry_profile.terminal_altitude_m / 1000.0, 2),
+            "terminal_velocity_ms": entry_profile.terminal_velocity_ms,
+            "terminal_time_s": entry_profile.terminal_time_s,
+        }, f, indent=2)
+
+    # Lunar HLS terminal powered descent & plume-surface interaction
+    lunar_solver = LunarHLSPlumeSolver()
+    lunar_states, lunar_erosion, lunar_risk = lunar_solver.run_terminal_landing(
+        initial_altitude_m=80.0,
+        initial_vertical_velocity_ms=-12.0,
+        initial_horizontal_velocity_ms=2.5,
+    )
+    lunar_json_path = out_path / "lunar_landing_telemetry.json"
+    with open(lunar_json_path, "w", encoding="utf-8") as f:
+        json.dump({
+            "touchdown_stable": lunar_risk.touchdown_stable,
+            "touchdown_velocity_ms": lunar_risk.touchdown_velocity_ms,
+            "crater_depth_cm": round(lunar_erosion.final_crater_depth_m * 100.0, 2),
+            "eroded_mass_kg": lunar_erosion.total_eroded_mass_kg,
+            "peak_shear_stress_pa": lunar_erosion.peak_shear_stress_pa,
+            "peak_ejecta_velocity_ms": lunar_risk.peak_particle_velocity_ms,
+            "landing_gear_abrasion_risk": lunar_risk.landing_gear_abrasion_risk,
+            "final_trn_mode": lunar_risk.final_trn_mode,
+        }, f, indent=2)
+
     print(f"      -> Flight Outcome: {'SUCCESS' if flight_result.success else 'FAILED'}")
     print(f"      -> Touchdown Time: {flight_result.touchdown_time_s} s")
     print(f"      -> Terminal Vertical Velocity: {flight_result.final_velocity_z_mps} m/s | Pitch: {flight_result.final_pitch_deg} deg")
+    print(f"      -> Atmospheric Entry: Handover Alt={entry_profile.terminal_altitude_m/1000.0:.1f} km, Peak Heat={entry_profile.peak_heat_flux_w_m2/1000.0:.0f} kW/m^2, Blackout={entry_profile.blackout_duration_s:.0f}s")
+    print(f"      -> Lunar HLS Landing: Touchdown vz={lunar_risk.touchdown_velocity_ms:.2f} m/s, Crater={lunar_erosion.final_crater_depth_m*100.0:.1f} cm, TRN: {lunar_risk.final_trn_mode}")
     print(f"      -> Propellant Burned: {flight_result.propellant_used_kg} kg (Remaining: {flight_result.propellant_remaining_kg} kg)")
     print(f"      -> Telemetry Saved: {telem_json_path} ({len(gnc_logger.records)} records)")
 
@@ -430,6 +490,24 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     hb3_shock = hotbird_coord.simulate_post_eclipse_thermal_shock("Hot Bird 3", duration_shadow_min=72.0, insulation_microcracked=True)
     hb_migration = hotbird_coord.evaluate_fleet_migration_to_eurostar_neo(migrated_channel_count=950)
 
+    # I. Optical Inter-Satellite Link (OISL) 1550nm Laser Crosslink Simulation
+    isl_transceiver = OpticalISLTransceiver()
+    isl_report = isl_transceiver.evaluate_link_budget(
+        distance_km=4500.0,
+        relative_velocity_km_s=2.8,
+        pointing_jitter_urad=1.8,
+    )
+
+    # J. Geostationary Station-Keeping & Fuel Lifetime Prognosticator
+    sk_prog = StationKeepingPrognosticator(StationKeepingConfig(
+        slot_longitude_deg=42.0,
+        dry_mass_kg=2200.0,
+        current_propellant_kg=280.0,
+        thruster_isp_s=310.0,
+    ))
+    sk_report = sk_prog.forecast_mission_lifetime()
+    sk_budget = sk_prog.compute_annual_budget()
+
     geo_summary = {
         "launch_abort_detector": {
             "nominal_thrust": abort_eval.nominal_thrust,
@@ -495,6 +573,29 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
             "egnos_geo4_sbas_active": hb_migration.egnos_geo4_sbas_active,
             "status_message": hb_colocation.status_message,
         },
+        "optical_isl_crosslink": {
+            "link_distance_km": isl_report.link_distance_km,
+            "relative_velocity_km_s": isl_report.relative_velocity_km_s,
+            "carrier_frequency_thz": isl_report.carrier_frequency_thz,
+            "transmitter_gain_dbi": isl_report.transmitter_gain_dbi,
+            "pointing_jitter_urad": isl_report.pointing_jitter_urad,
+            "received_power_dbm": isl_report.received_optical_power_dbm,
+            "link_margin_db": isl_report.link_margin_db,
+            "doppler_shift_ghz": isl_report.doppler_frequency_shift_ghz,
+            "estimated_ber": isl_report.estimated_ber,
+            "link_status": isl_report.link_status,
+        },
+        "station_keeping_prognostics": {
+            "slot_longitude_deg": sk_report.slot_longitude_deg,
+            "current_propellant_kg": sk_report.current_propellant_kg,
+            "usable_propellant_kg": sk_report.usable_propellant_kg,
+            "graveyard_reserve_kg": sk_report.graveyard_reserve_kg,
+            "graveyard_delta_v_ms": sk_report.graveyard_delta_v_ms,
+            "remaining_lifetime_years": sk_report.remaining_lifetime_years,
+            "annual_burn_budget_ms": sk_report.annual_burn_budget_ms,
+            "annual_propellant_consumption_kg": sk_budget.annual_propellant_consumption_kg,
+            "eol_status": sk_report.eol_status,
+        },
     }
 
     geo_json_path = out_path / "geo_satellite_validation.json"
@@ -509,6 +610,8 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     print(f"      -> Azercosmos 0.9° Coordination: Separation={asi_assessment.angular_separation_deg:.2f}° (C/I={asi_assessment.carrier_to_adjacent_interference_db:.1f} dB, Teleport: {teleport_redundancy['active_station']})")
     print(f"      -> AzerSky Debris Anomaly: {azersky_report.anomaly_classification} (E_k={azersky_report.kinetic_energy_joules/1000:.1f} kJ, Continuity: {azersky_report.service_continuity_plan})")
     print(f"      -> Hotbird 13°E Co-location: Min Clearance={hb_colocation.minimum_radial_normal_distance_km:.1f} km (Safe: {hb_colocation.safe_stationkeeping_clearance}, EGNOS SBAS: {hb_migration.egnos_geo4_sbas_active})")
+    print(f"      -> Optical ISL Cross-Link: Range={isl_report.link_distance_km:.0f} km, Margin=+{isl_report.link_margin_db:.1f} dB (Status: {isl_report.link_status}, Doppler: {isl_report.doppler_frequency_shift_ghz:.2f} GHz)")
+    print(f"      -> Station-Keeping Prognosis: {sk_report.slot_longitude_deg:.1f}°E (Remaining Life: {sk_report.remaining_lifetime_years:.1f} yrs, Usable Fuel: {sk_report.usable_propellant_kg:.1f} kg, EOL: {sk_report.eol_status})")
     print(f"      -> Geostationary & Fleet Validation Saved: {geo_json_path}")
 
     # Phase 8: Pipeline Artifact Verification & Schema Integrity Gate
@@ -530,6 +633,8 @@ def validate_pipeline_artifacts(artifact_dir: Path) -> dict:
     required_files = [
         "flight_telemetry.json",
         "flight_telemetry.csv",
+        "atmospheric_entry_profile.json",
+        "lunar_landing_telemetry.json",
         "slosh_dynamics.json",
         "tps_inspection_report.json",
         "tps_maintenance_work_order.md",

@@ -71,6 +71,19 @@ from .hotbird_fleet_operations import (
     EclipseThermalShockReport,
     FleetMigrationReport,
 )
+from .optical_isl_crosslink import (
+    OpticalISLTransceiver,
+    OpticalISLConfig,
+    JitterSpectrumProfile,
+    OpticalLinkReport,
+)
+from .station_keeping_prognostics import (
+    StationKeepingPrognosticator,
+    StationKeepingConfig,
+    TankPVTReading,
+    StationKeepingBudget,
+    LifetimePrognosisReport,
+)
 
 __all__ = [
     "LaunchAbortDetector",
@@ -110,4 +123,13 @@ __all__ = [
     "ColocationSeparationReport",
     "EclipseThermalShockReport",
     "FleetMigrationReport",
+    "OpticalISLTransceiver",
+    "OpticalISLConfig",
+    "JitterSpectrumProfile",
+    "OpticalLinkReport",
+    "StationKeepingPrognosticator",
+    "StationKeepingConfig",
+    "TankPVTReading",
+    "StationKeepingBudget",
+    "LifetimePrognosisReport",
 ]

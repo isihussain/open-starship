@@ -152,7 +152,7 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 10.3 Implement `starship_geo_sat/azersky_debris_conjunction.py`:
   - LEO Sun-Synchronous Orbit circular velocity ($7.51\text{ km/s}$) and period ($98.7\text{ min}$) dynamics.
   - Hypervelocity kinetic impact energy solver ($E_k = \frac{1}{2} m v^2$) and Cour-Palais penetration depth in aluminum bus skin.
-  - Telemetry loss diagnosis: distinguishes hypervelocity micro-debris power harness severance (single intact body in US SSN catalog) from explosive fragmentation.
+  - Telemetry loss diagnosis: distinguishes hypervelocity micro-debris power line severance (single intact body in US SSN catalog) from explosive fragmentation.
   - Post-impact tumbling disturbance rate estimator ($\boldsymbol{\omega}_{\text{tumble}}$) and SPOT-6 twin service continuity fallback.
 - [x] 10.4 Author comprehensive unit tests (`test_azercosmos_operations.py`) expanding suite verification from 99 to 108 passing tests.
 - [x] 10.5 Integrate Azercosmos and AzerSky evaluations into Phase 7 of `run_pipeline.py` and validate artifacts in `pipeline_artifacts/geo_satellite_validation.json`.
@@ -176,3 +176,30 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 11.4 Integrate Hotbird operations into Phase 7 of `run_pipeline.py` and validate artifacts in `pipeline_artifacts/geo_satellite_validation.json`.
 - [x] 11.5 Extend 3D WebGL Mission Control cockpit (`visualizer/index.html`) with Hotbird 13°E co-location and EGNOS GEO-4 status cards and telemetry display.
 - [x] 11.6 Update `README.md` and `docs/assets/hero_banner.svg` with Hotbird specifications, equations, and 115 tests badge.
+
+---
+
+## Phase 12: Atmospheric Entry Corridor, Lunar HLS Plume PSI, Optical ISL & Fault Injector
+- [x] 12.1 Implement `starship_flip_gnc/atmospheric_entry.py`:
+  - 3-DoF spherical Earth atmospheric entry trajectory propagator (120 km -> 15 km).
+  - Sutton-Graves convective stagnation heat flux and bank-angle lift vector steering.
+  - Plasma sheath electron density and cutoff frequency (S-band blackout duration).
+  - Aerodynamic corridor boundaries: skip-out overshoot vs. excessive structural deceleration undershoot.
+- [x] 12.2 Implement `starship_flip_gnc/lunar_hls_landing.py`:
+  - Lunar terminal powered descent in 1/6 g vacuum (g = 1.62 m/s^2).
+  - Roberts supersonic plume-surface impingement shear stress and regolith erosion rate.
+  - Cratering excavation depth and high-velocity sandblasting ejecta kinetic energy assessment.
+  - Vacuum dust cloud optical extinction and Terrain Relative Navigation (TRN) feature tracking gate.
+- [x] 12.3 Implement `starship_geo_sat/optical_isl_crosslink.py`:
+  - 1550 nm C-band Erbium-Doped Fiber Amplifier (EDFA) optical inter-satellite link (OISL) budget.
+  - Micro-radian Pointing, Acquisition, and Tracking (PAT) loop and reaction wheel micro-vibration jitter spectrum rejection.
+  - Orbital relative velocity relativistic Doppler frequency shift (GHz scale) and coherent receiver photon sensitivity.
+- [x] 12.4 Implement `starship_geo_sat/station_keeping_prognostics.py`:
+  - North-South (~48.2 m/s/yr) and Earth triaxiality J22 East-West station-keeping budget solver.
+  - Tank Pressure-Volume-Temperature (PVT) helium ullage propellant gauging.
+  - IADC super-GEO graveyard disposal delta-v (~9.4 m/s) and fuel reserve enforcement.
+  - Forecasted operational lifetime and End-of-Life (EOL) degradation alarms.
+- [x] 12.5 Expand unit test suite across all packages from 115 to 142 passing tests (`test_atmospheric_entry.py`, `test_lunar_hls_landing.py`, `test_optical_isl.py`, `test_station_keeping.py`).
+- [x] 12.6 Integrate new solvers into `run_pipeline.py` (Phases 1, 7, and 8), generating verified `atmospheric_entry_profile.json` and `lunar_landing_telemetry.json`.
+- [x] 12.7 Enhance 3D WebGL Mission Control (`visualizer/index.html`) with a dedicated 6th tab ("⚡ Fault Injector") supporting real-time reactive anomaly triggers, alongside entry corridor, lunar HLS, optical ISL, and fuel prognosis displays.
+- [x] 12.8 Update `README.md` and `docs/assets/hero_banner.svg` with 142 tests passing badges and new architectural diagrams.

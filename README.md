@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/isihussain/open-starship/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/isihussain/open-starship/ci.yml?branch=main&style=for-the-badge&logo=github-actions&logoColor=white&label=CI%20BUILD" alt="CI"></a>
   <a href="https://isihussain.github.io/open-starship/"><img src="https://img.shields.io/badge/LIVE%20DEMO-3D%20VISUALIZER-38bdf8?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Demo"></a>
-  <a href="https://github.com/isihussain/open-starship"><img src="https://img.shields.io/badge/TESTS-115%20PASSED-22c55e?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests"></a>
+  <a href="https://github.com/isihussain/open-starship"><img src="https://img.shields.io/badge/TESTS-142%20PASSED-22c55e?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests"></a>
   <a href="https://www.python.org"><img src="https://img.shields.io/badge/PYTHON-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-38bdf8?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/isihussain/oxide-compiler"><img src="https://img.shields.io/badge/VERIFIED%20BY-OXIDE%20C%2B%2B20-f97316?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="Oxide"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-6366f1?style=for-the-badge" alt="License"></a>
@@ -45,11 +45,11 @@
 
 The codebase contains four computational packages, a browser-based 3D mission control application, and an 8-phase pipeline orchestrator:
 
-1. [**`starship-flip-gnc`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc): 3-DoF trajectory optimizer, quaternion 3D attitude kinematics, thrust-vector control (TVC), Mechazilla chopstick tower capture solver, and aerospace flight safety interlocks.
+1. [**`starship-flip-gnc`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc): 3-DoF trajectory optimizer, quaternion 3D attitude kinematics, thrust-vector control (TVC), Mechazilla chopstick tower capture solver, atmospheric entry corridor (120 km $\to$ 15 km) with Sutton-Graves aerothermal heating and plasma S-band blackout, Lunar Starship (HLS) powered descent with regolith plume-surface interaction (PSI), and aerospace flight safety interlocks.
 2. [**`starship-cryo-slosh`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-cryo-slosh): Reduced-order mechanical pendulum simulator for cryogenic propellant sloshing, ullage gas ingestion warnings, annular ring baffle damping, and in-space tanker-to-depot mass transfers.
 3. [**`starship-tps-vision`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-tps-vision): Aerothermal load risk mapping fused with multi-spectral tile imagery to identify, classify, and prioritize damaged hexagonal Thermal Protection System (TPS) heat-shield tiles.
-4. [**`starship-geo-sat`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat): Geostationary and Earth observation satellite operations, electric orbit raising (EOR), zero-magnetic-field reaction wheel desaturation, adjacent satellite interference across 0.9° orbital proximity (Azerspace-1 & Azerspace-2), hypervelocity micro-debris collision diagnostics (AzerSky), and multi-spacecraft co-location via $e/i$ vector separation with Eurostar Neo migration (Hotbird 1 to 13G), derived from the Türksat, Azercosmos, and Eutelsat Hotbird programs.
-5. [**`visualizer/`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/visualizer): Standalone 3D WebGL mission control simulator running directly in modern web browsers with zero installation.
+4. [**`starship-geo-sat`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat): Geostationary and Earth observation satellite operations, electric orbit raising (EOR), zero-magnetic-field reaction wheel desaturation, adjacent satellite interference across 0.9° orbital proximity (Azerspace-1 & Azerspace-2), hypervelocity micro-debris collision diagnostics (AzerSky), multi-spacecraft co-location via $e/i$ vector separation with Eurostar Neo migration (Hotbird 1 to 13G), 1550 nm Optical Inter-Satellite Links (OISL), and long-term station-keeping fuel prognostics with IADC graveyard disposal enforcement.
+5. [**`visualizer/`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/visualizer): Standalone 6-tab 3D WebGL mission control simulator featuring live flight replay and interactive real-time failure & anomaly injection mode.
 
 ---
 
@@ -100,6 +100,8 @@ flowchart TD
         USSA76["USSA76 Atmosphere &<br/>Aerodynamic Drag / Lift"]:::gnc
         QUAT_ATT["Quaternion 3D Kinematics<br/>& Lie Logarithm Error"]:::gnc
         TVC_ALLOC["3-Raptor TVC &<br/>Control Allocator (B B^T)"]:::gnc
+        ENTRY_CORR["Atmospheric Entry Corridor<br/>(120 km -> 15 km & Plasma Cutoff)"]:::gnc
+        LUNAR_PSI["Lunar HLS Powered Descent<br/>(Plume-Surface Regolith PSI)"]:::gnc
     end
 
     subgraph CRYO_MECHANICS["2. Cryogenic Propellant Mechanics"]
@@ -132,11 +134,13 @@ flowchart TD
         AZER_ASI["0.9° Adjacent Slot Interference<br/>(Azerspace-1 & Azerspace-2)"]:::geo
         AZER_SKY["LEO Micro-Debris Collision<br/>(AzerSky SPOT 7 Diagnostics)"]:::geo
         HOTBIRD_COLA["13°E Multi-Satellite Co-location<br/>(Hotbird 1 to 13G e/i Separation)"]:::geo
+        OISL_LASER["1550nm Laser Crosslink<br/>(OISL PAT & Doppler Shift)"]:::geo
+        SK_PROGNOSIS["Station-Keeping Prognostics<br/>(J22 EWSK & Graveyard Reserve)"]:::geo
     end
 
     subgraph OUTPUT_GATE["6. Telemetry Replay & Mission Control"]
         RUN_PIPELINE["8-Phase End-to-End Orchestrator<br/>(run_pipeline.py + Schema Gate)"]:::vis
-        WEBGL_APP["Standalone 3D WebGL Visualizer<br/>(visualizer/index.html)"]:::vis
+        WEBGL_APP["Standalone 3D WebGL Cockpit<br/>(6-Tab Live Fault Injection Mode)"]:::vis
     end
 
     GNC_SOLVER -->|State: t, z, vz, theta, q_dyn| SLOSH_PENDULUM
@@ -249,6 +253,8 @@ python3 run_pipeline.py pipeline_artifacts
       -> Flight Outcome: SUCCESS
       -> Touchdown Time: 37.3 s
       -> Terminal Vertical Velocity: -0.79 m/s | Pitch: -2.99 deg
+      -> Atmospheric Entry: Handover Alt=14.9 km, Peak Heat=713 kW/m^2, Blackout=538s
+      -> Lunar HLS Landing: Touchdown vz=1.70 m/s, Crater=0.0 cm, TRN: NOMINAL_OPTICAL_TRN
       -> Propellant Burned: 15597.5 kg (Remaining: 9402.5 kg)
       -> Telemetry Saved: pipeline_artifacts/flight_telemetry.json (1865 records)
 
@@ -297,10 +303,12 @@ python3 run_pipeline.py pipeline_artifacts
       -> Azercosmos 0.9° Coordination: Separation=0.90° (C/I=30.3 dB, Teleport: ABSHERON_MAIN_STATION)
       -> AzerSky Debris Anomaly: HYPERVELOCITY_MICRODEBRIS_COLLISION (E_k=147.8 kJ, Continuity: SPOT-6_TWIN_HANDOFF_AND_AZERSKY-2_DISPATCH)
       -> Hotbird 13°E Co-location: Min Clearance=18.7 km (Safe: True, EGNOS SBAS: True)
+      -> Optical ISL Cross-Link: Range=4500 km, Margin=+27.1 dB (Status: LINK_CLOSED, Doppler: 1.81 GHz)
+      -> Station-Keeping Prognosis: 42.0°E (Remaining Life: 6.1 yrs, Usable Fuel: 272.1 kg, EOL: HEALTHY_EXPEDITION)
       -> Geostationary & Fleet Validation Saved: pipeline_artifacts/geo_satellite_validation.json
 
 [Phase 8/8] Verifying artifact integrity and physical consistency...
-      -> Verified 7 artifacts: all integrity checks passed.
+      -> Verified 9 artifacts: all integrity checks passed.
 
 ================================================================
       ALL PHASES COMPLETED AND INTEGRATED SUCCESSFULLY          
@@ -430,6 +438,8 @@ open-starship/
 │   ├── starship_flip_gnc/
 │   │   ├── models.py                   # Vehicle geometry, Raptor cluster limits, flight state
 │   │   ├── aerodynamics.py             # Drag, lift, atmospheric density, aerothermal flux
+│   │   ├── atmospheric_entry.py        # 120 km -> 15 km entry corridor, Sutton-Graves, plasma cutoff
+│   │   ├── lunar_hls_landing.py        # Lunar vacuum descent, regolith erosion PSI & TRN gate
 │   │   ├── quaternion_attitude.py      # Quaternion 3D kinematics & Lie logarithm error
 │   │   ├── trajectory.py               # 3-phase landing flip trajectory solver (RK4)
 │   │   ├── catch_dynamics.py           # Mechazilla chopstick tower capture solver
@@ -441,7 +451,7 @@ open-starship/
 │   │   ├── telemetry.py                # Flight telemetry logger and schema exporter
 │   │   └── native_bridge.py            # Python C-ABI FFI wrapper
 │   ├── native/              # Freestanding C99 core (starship_core.c)
-│   └── tests/               # Unit test suite (52 tests)
+│   └── tests/               # Unit test suite (66 tests)
 ├── starship-cryo-slosh/     # Cryogenic propellant slosh & orbital transfer simulator
 │   ├── starship_cryo_slosh/ # Tank geometry, pendulum model, simulator, orbital transfer
 │   └── tests/               # Unit test suite (16 tests)
@@ -458,10 +468,12 @@ open-starship/
 │   │   ├── rfi_transponder_guard.py        # Cross-polarization leakage & Ka-band rain fade AUPC
 │   │   ├── azercosmos_orbital_coordination.py # 0.9° slot proximity & Absheron/Nakhchivan failover
 │   │   ├── azersky_debris_conjunction.py   # LEO hypervelocity micro-debris collision (AzerSky)
-│   │   └── hotbird_fleet_operations.py     # 13°E multi-satellite co-location & Eurostar Neo migration
-│   └── tests/               # Unit test suite (36 tests)
-├── visualizer/              # Standalone 3D Three.js flight & slosh browser visualizer
-│   └── index.html           # Interactive real-time 3D telemetry and tank cutaway app
+│   │   ├── hotbird_fleet_operations.py     # 13°E multi-satellite co-location & Eurostar Neo migration
+│   │   ├── optical_isl_crosslink.py        # 1550nm laser inter-satellite crosslink & PAT tracking
+│   │   └── station_keeping_prognostics.py  # J22 EWSK, PVT gauging & IADC graveyard disposal
+│   └── tests/               # Unit test suite (49 tests)
+├── visualizer/              # Standalone 6-tab 3D Three.js flight & satellite cockpit
+│   └── index.html           # Interactive real-time 3D telemetry, tank cutaway & fault injector
 ├── run_pipeline.py          # 8-phase end-to-end orchestration runner with artifact validation
 ├── yapacagin isler.md       # Milestone tracking specification
 ├── yaptigin isler.md        # Completed technical report & verification logs
@@ -483,8 +495,15 @@ cd open-starship
 # Run the complete 8-phase pipeline
 python3 run_pipeline.py pipeline_artifacts
 
-# Run all 115 unit tests across all four packages
+# Run all 142 unit tests across all four packages
 (cd starship-flip-gnc && python3 -m unittest discover -s tests)
+(cd starship-cryo-slosh && python3 -m unittest discover -s tests)
+(cd starship-tps-vision && python3 -m unittest discover -s tests)
+(cd starship-geo-sat && python3 -m unittest discover -s tests)
+
+# Launch the interactive 3D WebGL cockpit
+open visualizer/index.html
+```
 (cd starship-cryo-slosh && python3 -m unittest discover -s tests)
 (cd starship-tps-vision && python3 -m unittest discover -s tests)
 (cd starship-geo-sat && python3 -m unittest discover -s tests)

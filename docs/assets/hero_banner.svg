@@ -399,7 +399,7 @@
       INTERACTIVE 3D WEBGL VISUALIZER: <tspan fill="#38bdf8">https://isihussain.github.io/open-starship/</tspan> • 0 Dependencies • Pure Three.js
     </text>
     <text class="hud-text" x="1005" y="12" font-size="10" fill="#64748b" text-anchor="end">
-      TESTS: 115/115 PASSING [GREEN]
+      TESTS: 142/142 PASSING [GREEN]
     </text>
   </g>
 </svg>
