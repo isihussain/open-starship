@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/isihussain/open-starship/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/isihussain/open-starship/ci.yml?branch=main&style=for-the-badge&logo=github-actions&logoColor=white&label=CI%20BUILD" alt="CI"></a>
   <a href="https://isihussain.github.io/open-starship/"><img src="https://img.shields.io/badge/LIVE%20DEMO-3D%20VISUALIZER-38bdf8?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Demo"></a>
-  <a href="https://github.com/isihussain/open-starship"><img src="https://img.shields.io/badge/TESTS-99%20PASSED-22c55e?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests"></a>
+  <a href="https://github.com/isihussain/open-starship"><img src="https://img.shields.io/badge/TESTS-108%20PASSED-22c55e?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests"></a>
   <a href="https://www.python.org"><img src="https://img.shields.io/badge/PYTHON-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-38bdf8?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/isihussain/oxide-compiler"><img src="https://img.shields.io/badge/VERIFIED%20BY-OXIDE%20C%2B%2B20-f97316?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="Oxide"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-6366f1?style=for-the-badge" alt="License"></a>
@@ -21,7 +21,7 @@
   <b><a href="#architecture--telemetry-flow">Architecture</a></b> •
   <b><a href="#sub-second-landing-flip--catch-sequence">Flip Sequence</a></b> •
   <b><a href="#aerospace-launch--flight-safety-interlocks">Safety Interlocks</a></b> •
-  <b><a href="#geostationary-satellite-operations-türksat-fleet-mitigations">Türksat Operations</a></b> •
+  <b><a href="#geostationary--satellite-fleet-operations-türksat--azercosmos">Satellite Fleet Operations</a></b> •
   <b><a href="#quickstart">Quickstart</a></b>
 </p>
 
@@ -48,7 +48,7 @@ The codebase contains four computational packages, a browser-based 3D mission co
 1. [**`starship-flip-gnc`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc): 3-DoF trajectory optimizer, quaternion 3D attitude kinematics, thrust-vector control (TVC), Mechazilla chopstick tower capture solver, and aerospace flight safety interlocks.
 2. [**`starship-cryo-slosh`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-cryo-slosh): Reduced-order mechanical pendulum simulator for cryogenic propellant sloshing, ullage gas ingestion warnings, annular ring baffle damping, and in-space tanker-to-depot mass transfers.
 3. [**`starship-tps-vision`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-tps-vision): Aerothermal load risk mapping fused with multi-spectral tile imagery to identify, classify, and prioritize damaged hexagonal Thermal Protection System (TPS) heat-shield tiles.
-4. [**`starship-geo-sat`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat): Geostationary satellite operations, electric orbit raising (EOR), Van Allen radiation damage integration, zero-magnetic-field reaction wheel desaturation, and transponder cross-polarization protection derived from the Türksat satellite program (Türksat 1A through 6A).
+4. [**`starship-geo-sat`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat): Geostationary and Earth observation satellite operations, electric orbit raising (EOR), Van Allen radiation damage integration, zero-magnetic-field reaction wheel desaturation, adjacent satellite interference across 0.9° orbital proximity (Azerspace-1 & Azerspace-2), and hypervelocity micro-debris collision diagnostics (AzerSky), derived from the Türksat and Azercosmos satellite programs.
 5. [**`visualizer/`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/visualizer): Standalone 3D WebGL mission control simulator running directly in modern web browsers with zero installation.
 
 ---
@@ -123,12 +123,14 @@ flowchart TD
         DEBRIS["Debris IIP Geofence & AFTS<br/>(Long March Inland Footprint)"]:::safety
     end
 
-    subgraph TÜRKSAT_GEO["5. Geostationary Satellite Operations (Türksat Fleet)"]
+    subgraph FLEET_GEO["5. Regional Satellite Fleet Operations (Türksat & Azercosmos)"]
         TURK_1A["Turbopump Abort Detector<br/>(Türksat 1A Ariane Failure)"]:::geo
         TURK_1BC["Inclined Orbit Secular Drift<br/>(Türksat 1B/1C Ground Tracking)"]:::geo
         TURK_5AB["Electric Orbit Raising (EOR)<br/>(Türksat 5A/5B Radiation Fluence)"]:::geo
         TURK_6A["Zero-B Reaction Wheel Desat<br/>(Türksat 6A Pulsed Couples)"]:::geo
         TURK_34["Transponder Cross-Pol & AUPC<br/>(Türksat 3A/4A Rain Fade)"]:::geo
+        AZER_ASI["0.9° Adjacent Slot Interference<br/>(Azerspace-1 & Azerspace-2)"]:::geo
+        AZER_SKY["LEO Micro-Debris Collision<br/>(AzerSky SPOT 7 Diagnostics)"]:::geo
     end
 
     subgraph OUTPUT_GATE["6. Telemetry Replay & Mission Control"]
@@ -152,7 +154,7 @@ flowchart TD
     CRYO_MECHANICS ==> RUN_PIPELINE
     THERMAL_PROTECTION ==> RUN_PIPELINE
     SAFETY_INTERLOCKS ==> RUN_PIPELINE
-    TÜRKSAT_GEO ==> RUN_PIPELINE
+    FLEET_GEO ==> RUN_PIPELINE
 
     RUN_PIPELINE -->|Telemetry JSON Artifacts| WEBGL_APP
 ```
@@ -212,9 +214,9 @@ The launch vehicle safety subsystem incorporates mitigations derived from real-w
 
 ---
 
-## Geostationary Satellite Operations (Türksat Fleet Mitigations)
+## Geostationary & Satellite Fleet Operations (Türksat & Azercosmos)
 
-The `starship-geo-sat` package solves operational, orbital mechanics, and space environment failure modes documented across Turkey's national satellite telecommunications fleet:
+The `starship-geo-sat` package solves operational, orbital mechanics, and space environment failure modes documented across Turkey's and Azerbaijan's national satellite telecommunications and Earth observation fleets:
 
 | Platform | Operational Reference | Engineering Bottleneck | Algorithmic Solution |
 | :---: | :--- | :--- | :--- |
@@ -223,6 +225,8 @@ The `starship-geo-sat` package solves operational, orbital mechanics, and space 
 | **Türksat 5A & 5B** | **Electric Orbit Raising** *(Eurostar E3000EOR, 2021)* | Hall-effect electric orbit raising takes 140 to 160 days from GTO to GEO, exposing solar cells to extended proton and electron radiation within the Van Allen belts. | [**`electric_orbit_raising.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/electric_orbit_raising.py): Low-thrust Gauss-variational spiral propagator. Integrates equivalent 1-MeV electron fluence across belt passes and calculates solar array non-ionizing energy loss (NIEL) power degradation. |
 | **Türksat 6A** | **Indigenous Platform** *(2024)* | Earth's magnetic field at 35,786 km is negligible (~100 nT), rendering magnetic torquers useless. Solar radiation pressure accumulates angular momentum in reaction wheels. | [**`reaction_wheel_desat.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/reaction_wheel_desat.py): Formulates coupled minimum-propellant pulsed thruster desaturation firing sequences with zero net translational force, preventing station-keeping deadband violations ($\pm 0.05^\circ$). |
 | **Türksat 3A/4A/4B** | **Payload Protection** *(2008–Present)* | Terrestrial uplink cross-polarization leakage (XPI < 25 dB), TWTA non-linear saturation from rogue carriers, and Ka-band rain fade (up to 20 dB loss at 30 GHz). | [**`rfi_transponder_guard.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/rfi_transponder_guard.py): Implements Saleh non-linear TWTA gain compression modeling, co-channel cross-polarization violation detection, and automated uplink power control (AUPC) feedback commands. |
+| **Azerspace-1 & Azerspace-2** | **Dual Slot 0.9° Proximity** *(46.0°E & 45.1°E, 2013/2018)* | Ground dish beamwidths (1.2m to 2.4m) exceed the 0.9° angular separation, creating high Adjacent Satellite Interference (ASI) and self-jamming on co-frequency transponders. | [**`azercosmos_orbital_coordination.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/azercosmos_orbital_coordination.py): Calculates ITU-R S.580 off-axis antenna sidelobe roll-off, evaluates $(C/I)_{\text{ASI}}$ link degradation, selects DVB-S2X adaptive coding and modulation (ACM), and executes failover between Absheron Main Teleport and Nakhchivan Reserve Teleport. |
+| **AzerSky (SPOT 7)** | **Sun-Synchronous LEO Anomaly** *(694.9 km, March 2023)* | Telemetry and command links ceased suddenly on March 17, 2023. US Space Surveillance Network tracked the satellite intact, indicating hypervelocity micro-debris severed the main power bus without explosive hull breakup. | [**`azersky_debris_conjunction.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/azersky_debris_conjunction.py): Evaluates kinetic impact energy ($E_k = \frac{1}{2} m v^2$), solves Cour-Palais penetration depth in aluminum bus skin, estimates post-impact tumbling rate ($\boldsymbol{\omega}_{\text{tumble}}$), and commands Earth observation continuity fallback to twin SPOT-6 imagery. |
 
 ---
 
@@ -288,7 +292,9 @@ python3 run_pipeline.py pipeline_artifacts
       -> Electric Orbit Raising: Day 30 (Array Power: 11718W, Loss: -2.4%)
       -> Wheel Desaturation: PULSED (Deadband Safe: True)
       -> Transponder Link Guard: XPI=33.5 dB (AUPC: +2.9 dB)
-      -> Geostationary Validation Saved: pipeline_artifacts/geo_satellite_validation.json
+      -> Azercosmos 0.9° Coordination: Separation=0.90° (C/I=30.3 dB, Teleport: ABSHERON_MAIN_STATION)
+      -> AzerSky Debris Anomaly: HYPERVELOCITY_MICRODEBRIS_COLLISION (E_k=147.8 kJ, Continuity: SPOT-6_TWIN_HANDOFF_AND_AZERSKY-2_DISPATCH)
+      -> Geostationary & Fleet Validation Saved: pipeline_artifacts/geo_satellite_validation.json
 
 [Phase 8/8] Verifying artifact integrity and physical consistency...
       -> Verified 7 artifacts: all integrity checks passed.
@@ -376,9 +382,9 @@ python3 -m starship_tps_vision.cli --telemetry ../starship-flip-gnc/telemetry.js
 </details>
 
 <details>
-<summary><b>4. starship-geo-sat: Geostationary Satellite Operations & Türksat Fleet</b></summary>
+<summary><b>4. starship-geo-sat: Geostationary & Satellite Fleet Operations (Türksat & Azercosmos)</b></summary>
 
-### Orbital Mechanics & Space Environment
+### Orbital Mechanics, Space Environment & Adjacent Slot Interference
 
 * **Gauss-Variational Spiral Propagator:** Computes secular rates of change for semi-major axis $a$ and inclination $i$ under low-thrust Hall propulsion:
 
@@ -386,6 +392,13 @@ $$\frac{da}{dt} = \frac{2 v}{\mu} a_t, \quad \frac{di}{dt} = \frac{r \cos(\theta
 
 * **Van Allen Radiation Fluence:** Numerically integrates equivalent 1-MeV electron fluence $\Phi_e$ across proton and electron belts, calculating solar array power output degradation $P(t) = P_0 [1 - C \log_{10}(1 + \Phi_e / \Phi_0)]$.
 * **Zero-B Reaction Wheel Desaturation:** Computes pulsed thruster fire sequences that cancel accumulated reaction wheel momentum $\mathbf{H}_{\text{RW}}$ while maintaining net translational force $\sum \mathbf{F} = \mathbf{0}$.
+* **0.9° Adjacent Satellite Interference (ASI):** Solves the angular proximity problem between Azerspace-1 ($46.0^\circ\text{E}$) and Azerspace-2 ($45.1^\circ\text{E}$) using ITU-R S.580 off-axis sidelobe envelopes:
+
+$$G(\phi) = 29 - 25 \log_{10}(\phi) \text{ dBi}, \quad (C/I)_{\text{ASI}} = \Delta \text{EIRP} + [G_0 - G(\phi = 0.9^\circ)]$$
+
+* **Hypervelocity Micro-Debris Collision (AzerSky):** Calculates kinetic impact energy $E_k = \frac{1}{2} m v^2$ and Cour-Palais penetration depth in aluminum bus skin:
+
+$$P_{\text{depth}} = 0.53 \cdot d_p^{1.06} \cdot \left(\frac{\rho_p}{\rho_t}\right)^{0.5} \cdot \left(\frac{v_{\text{rel}}}{c_{\text{sound}}}\right)^{2/3}$$
 
 ```bash
 cd starship-geo-sat
@@ -428,15 +441,17 @@ open-starship/
 ├── starship-tps-vision/     # TPS heat shield tile defect detection & work order pipeline
 │   ├── starship_tps_vision/ # Risk map, synthetic generator, detector, reporter
 │   └── tests/               # Unit test suite (11 tests)
-├── starship-geo-sat/        # Geostationary satellite operations & Türksat incident mitigations
-│   ├── starship_geo_sat/    # Launch abort, inclined orbit, electric orbit raising, desat, RFI guard
-│   │   ├── launch_abort_detector.py    # Cryogenic upper-stage turbopump abort (Türksat 1A)
-│   │   ├── inclined_orbit_dynamics.py  # Lunisolar drift & ground antenna tracking (Türksat 1B/1C)
-│   │   ├── electric_orbit_raising.py   # Hall-effect spiral & Van Allen radiation (Türksat 5A/5B)
-│   │   ├── eclipse_thermal_model.py    # Equinox shadow radiative cooldown & battery DoD
-│   │   ├── reaction_wheel_desat.py     # GEO zero-B reaction wheel desaturation (Türksat 6A)
-│   │   └── rfi_transponder_guard.py    # Cross-polarization leakage & Ka-band rain fade AUPC
-│   └── tests/               # Unit test suite (20 tests)
+├── starship-geo-sat/        # Geostationary & satellite fleet operations (Türksat & Azercosmos)
+│   ├── starship_geo_sat/    # Abort, inclined orbit, EOR, desat, RFI guard, ASI, debris diagnostics
+│   │   ├── launch_abort_detector.py        # Cryogenic upper-stage turbopump abort (Türksat 1A)
+│   │   ├── inclined_orbit_dynamics.py      # Lunisolar drift & ground antenna tracking (Türksat 1B/1C)
+│   │   ├── electric_orbit_raising.py       # Hall-effect spiral & Van Allen radiation (Türksat 5A/5B)
+│   │   ├── eclipse_thermal_model.py        # Equinox shadow radiative cooldown & battery DoD
+│   │   ├── reaction_wheel_desat.py         # GEO zero-B reaction wheel desaturation (Türksat 6A)
+│   │   ├── rfi_transponder_guard.py        # Cross-polarization leakage & Ka-band rain fade AUPC
+│   │   ├── azercosmos_orbital_coordination.py # 0.9° slot proximity & Absheron/Nakhchivan failover
+│   │   └── azersky_debris_conjunction.py   # LEO hypervelocity micro-debris collision (AzerSky)
+│   └── tests/               # Unit test suite (29 tests)
 ├── visualizer/              # Standalone 3D Three.js flight & slosh browser visualizer
 │   └── index.html           # Interactive real-time 3D telemetry and tank cutaway app
 ├── run_pipeline.py          # 8-phase end-to-end orchestration runner with artifact validation
@@ -460,7 +475,7 @@ cd open-starship
 # Run the complete 8-phase pipeline
 python3 run_pipeline.py pipeline_artifacts
 
-# Run all 99 unit tests across all four packages
+# Run all 108 unit tests across all four packages
 (cd starship-flip-gnc && python3 -m unittest discover -s tests)
 (cd starship-cryo-slosh && python3 -m unittest discover -s tests)
 (cd starship-tps-vision && python3 -m unittest discover -s tests)

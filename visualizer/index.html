@@ -483,7 +483,7 @@
     <!-- ── GEO-SAT PANEL ── -->
     <div class="panel-page" id="panel-geosat">
       <div class="panel-section">
-        <div class="panel-title">Türksat Fleet Overview</div>
+        <div class="panel-title">Regional Satellite Fleets (Türksat &amp; Azercosmos)</div>
         <div class="status-grid">
           <div class="status-card">
             <div class="status-card-title">Abort Detector</div>
@@ -508,6 +508,14 @@
           <div class="status-card">
             <div class="status-card-title">AUPC Boost</div>
             <div class="status-card-val sky" id="g-aupc">+2.9 dB</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">0.9° ASI Guard</div>
+            <div class="status-card-val ok" id="g-asi">30.3 dB</div>
+          </div>
+          <div class="status-card">
+            <div class="status-card-title">AzerSky Status</div>
+            <div class="status-card-val warn" id="g-azersky">DEBRIS HIT</div>
           </div>
         </div>
       </div>
@@ -572,6 +580,31 @@
         <div class="hud-row"><span class="hud-label">Rain Fade</span><span class="hud-val warn">2.9 dB</span></div>
         <div class="hud-row"><span class="hud-label">AUPC Command</span><span class="hud-val sky">+2.9 dB</span></div>
         <div class="hud-row"><span class="hud-label">IMD3 Risk</span><span class="hud-val ok">LOW</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">0.9° Adjacent Slot Interference — Azerspace-1 &amp; Azerspace-2</div>
+        <div class="hud-row"><span class="hud-label">Azerspace-1 Slot</span><span class="hud-val sky">46.0° E (Star-2.4, 24C / 12Ku)</span></div>
+        <div class="hud-row"><span class="hud-label">Azerspace-2 Slot</span><span class="hud-val sky">45.1° E (SSL-1300, 35Ku)</span></div>
+        <div class="hud-row"><span class="hud-label">Angular Separation</span><span class="hud-val warn">0.90°</span></div>
+        <div class="hud-row"><span class="hud-label">Ground Dish 3dB BW</span><span class="hud-val">0.20° (9m Absheron Teleport)</span></div>
+        <div class="hud-row"><span class="hud-label">Antenna Isolation</span><span class="hud-val ok">28.8 dB</span></div>
+        <div class="hud-row"><span class="hud-label">C/I_asi Ratio</span><span class="hud-val ok">30.3 dB</span></div>
+        <div class="hud-row"><span class="hud-label">ACM Recommendation</span><span class="hud-val sky">32APSK-9/10 (High Throughput)</span></div>
+        <div class="hud-row"><span class="hud-label">Active Teleport</span><span class="hud-val ok">Absheron Primary (Tier 4)</span></div>
+        <div class="hud-row"><span class="hud-label">Reserve Redundancy</span><span class="hud-val">Nakhchivan Teleport (Hot Standby)</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-title">Sun-Synchronous LEO Debris Anomaly — AzerSky (SPOT 7)</div>
+        <div class="hud-row"><span class="hud-label">Orbit Altitude</span><span class="hud-val">694.9 km (SSO, 98.2°)</span></div>
+        <div class="hud-row"><span class="hud-label">Incident Timestamp</span><span class="hud-val">17 Mar 2023 19:34 UTC</span></div>
+        <div class="hud-row"><span class="hud-label">Kinetic Impact Energy</span><span class="hud-val crit">147.8 kJ (~35.3g TNT)</span></div>
+        <div class="hud-row"><span class="hud-label">Shield Penetration</span><span class="hud-val crit">10.68 mm (Skin: 1.6 mm)</span></div>
+        <div class="hud-row"><span class="hud-label">Bus Voltage</span><span class="hud-val crit">0.0 V (Harness Severed)</span></div>
+        <div class="hud-row"><span class="hud-label">US SSN Radar Tracking</span><span class="hud-val ok">1 Object (Hull Intact)</span></div>
+        <div class="hud-row"><span class="hud-label">Anomaly Diagnosis</span><span class="hud-val warn">Hypervelocity Micro-Debris Collision</span></div>
+        <div class="hud-row"><span class="hud-label">Service Continuity</span><span class="hud-val sky">SPOT-6 Twin Handoff / Azersky-2</span></div>
       </div>
     </div>
 

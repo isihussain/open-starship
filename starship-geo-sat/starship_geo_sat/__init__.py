@@ -1,12 +1,19 @@
 """
-starship-geo-sat: Geostationary satellite operations, electric orbit raising, and payload protection module.
+starship-geo-sat: Geostationary and Earth observation satellite operations suite.
 
-Implements failure mitigations and dynamics models derived from the Türksat satellite program:
-  1. launch_abort_detector: Cryogenic upper-stage turbopump failure and suborbital fallback (Türksat 1A).
-  2. inclined_orbit_dynamics: Station-keeping fuel depletion and lunisolar drift tracking (Türksat 1B/1C).
-  3. electric_orbit_raising: Hall-effect low-thrust spiral transfer and Van Allen radiation degradation (Türksat 5A/5B).
-  4. reaction_wheel_desat: Zero-magnetic-field reaction wheel momentum desaturation via thrusters (Türksat 6A).
-  5. rfi_transponder_guard: Transponder cross-polarization interference and Ka-band rain fade AUPC (Türksat 3A/4A/4B).
+Implements failure mitigations, dynamics models, and payload protection derived from:
+  1. Türksat Satellite Fleet (Türksat 1A through 6A):
+     - Upper-stage turbopump abort detection (Türksat 1A)
+     - Inclined orbit secular drift & antenna pointing (Türksat 1B/1C)
+     - Electric orbit raising & Van Allen radiation fluence (Türksat 5A/5B)
+     - Zero-magnetic-field reaction wheel desaturation (Türksat 6A)
+     - Transponder cross-polarization guard & rain fade AUPC (Türksat 3A/4A/4B)
+  2. Azercosmos Satellite Fleet (Azerspace-1, Azerspace-2, AzerSky):
+     - 0.9° orbital proximity Adjacent Satellite Interference (ASI) and DVB-S2X ACM
+       adaptation between Azerspace-1 (46.0°E) and Azerspace-2 (45.1°E)
+     - Ground control redundancy: Absheron Main Teleport and Nakhchivan Reserve Teleport
+     - AzerSky (SPOT 7) Sun-Synchronous LEO hypervelocity micro-debris collision
+       penetration, tumbling dynamics, and SPOT-6 twin service continuity
 """
 
 from .launch_abort_detector import (
@@ -44,6 +51,18 @@ from .rfi_transponder_guard import (
     TransponderState,
     PayloadGuardAction,
 )
+from .azercosmos_orbital_coordination import (
+    AzercosmosOrbitalCoordinator,
+    GroundStationSite,
+    SatelliteSlot,
+    AdjacentInterferenceAssessment,
+)
+from .azersky_debris_conjunction import (
+    AzerSkyDebrisAnalyzer,
+    AzerSkyOrbitSpec,
+    DebrisImpactTelemetry,
+    DebrisAnomalyReport,
+)
 
 __all__ = [
     "LaunchAbortDetector",
@@ -69,4 +88,12 @@ __all__ = [
     "CarrierTelemetry",
     "TransponderState",
     "PayloadGuardAction",
+    "AzercosmosOrbitalCoordinator",
+    "GroundStationSite",
+    "SatelliteSlot",
+    "AdjacentInterferenceAssessment",
+    "AzerSkyDebrisAnalyzer",
+    "AzerSkyOrbitSpec",
+    "DebrisImpactTelemetry",
+    "DebrisAnomalyReport",
 ]

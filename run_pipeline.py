@@ -86,6 +86,14 @@ from starship_geo_sat.rfi_transponder_guard import (
     CarrierTelemetry,
     TransponderState,
 )
+from starship_geo_sat.azercosmos_orbital_coordination import (
+    AzercosmosOrbitalCoordinator,
+    GroundStationSite,
+)
+from starship_geo_sat.azersky_debris_conjunction import (
+    AzerSkyDebrisAnalyzer,
+    DebrisImpactTelemetry,
+)
 
 
 def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
@@ -376,6 +384,40 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
         )
     )
 
+    # F. Azercosmos 0.9° Orbital Proximity Coordination (Azerspace-1 & Azerspace-2)
+    azer_coordinator = AzercosmosOrbitalCoordinator()
+    absheron_teleport = GroundStationSite(
+        name="Absheron Main Ground Control Station",
+        latitude_deg=40.4093,
+        longitude_deg=49.8671,
+        altitude_m=50.0,
+        antenna_diameter_m=9.0,
+        tier_rating="Tier 4",
+    )
+    asi_assessment = azer_coordinator.evaluate_adjacent_interference(
+        earth_station=absheron_teleport,
+        carrier_freq_ghz=11.7,
+        wanted_satellite_eirp_dbw=53.5,
+        interfering_satellite_eirp_dbw=52.0,
+    )
+    teleport_redundancy = azer_coordinator.evaluate_teleport_redundancy(
+        absheron_snr_db=14.2,
+        nakhchivan_snr_db=13.9,
+    )
+
+    # G. AzerSky Sun-Synchronous LEO Debris Anomaly Diagnostics (March 17, 2023)
+    azersky_analyzer = AzerSkyDebrisAnalyzer()
+    azersky_telemetry = DebrisImpactTelemetry(
+        event_timestamp_utc="2023-03-17T19:34:00Z",
+        estimated_particle_diameter_mm=10.0,
+        relative_velocity_km_s=14.2,
+        debris_density_g_cm3=2.8,
+        measured_bus_voltage_volts=0.0,
+        ssn_tracked_object_count=1,
+        rf_signal_strength_dbm=-140.0,
+    )
+    azersky_report = azersky_analyzer.diagnose_anomaly(azersky_telemetry)
+
     geo_summary = {
         "launch_abort_detector": {
             "nominal_thrust": abort_eval.nominal_thrust,
@@ -412,6 +454,24 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
             "aupc_recommended_boost_db": rfi_action.aupc_recommended_boost_db,
             "status_message": rfi_action.status_message,
         },
+        "azercosmos_orbital_coordination": {
+            "angular_separation_deg": asi_assessment.angular_separation_deg,
+            "antenna_isolation_db": asi_assessment.antenna_isolation_db,
+            "carrier_to_adjacent_interference_db": asi_assessment.carrier_to_adjacent_interference_db,
+            "itu_envelope_compliant": asi_assessment.itu_envelope_compliant,
+            "acm_modulation_recommended": asi_assessment.acm_modulation_recommended,
+            "active_ground_station": teleport_redundancy["active_station"],
+            "status_message": asi_assessment.status_message,
+        },
+        "azersky_debris_conjunction": {
+            "impact_kinetic_energy_joules": azersky_report.kinetic_energy_joules,
+            "hypervelocity_penetration_mm": azersky_report.hypervelocity_penetration_mm,
+            "bus_skin_breached": azersky_report.bus_skin_breached,
+            "power_harness_severed": azersky_report.power_harness_severed,
+            "anomaly_classification": azersky_report.anomaly_classification,
+            "service_continuity_plan": azersky_report.service_continuity_plan,
+            "status_message": azersky_report.status_message,
+        },
     }
 
     geo_json_path = out_path / "geo_satellite_validation.json"
@@ -423,7 +483,9 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     print(f"      -> Electric Orbit Raising: Day {eor_latest.elapsed_days:.0f} (Array Power: {eor_latest.solar_array_power_watts:.0f}W, Loss: -{eor_latest.power_degradation_percent:.1f}%)")
     print(f"      -> Wheel Desaturation: {'PULSED' if desat_plan.desaturation_required else 'HOLD'} (Deadband Safe: {desat_plan.station_keeping_deadband_safe})")
     print(f"      -> Transponder Link Guard: XPI={rfi_action.cross_polar_isolation_db:.1f} dB (AUPC: +{rfi_action.aupc_recommended_boost_db:.1f} dB)")
-    print(f"      -> Geostationary Validation Saved: {geo_json_path}")
+    print(f"      -> Azercosmos 0.9° Coordination: Separation={asi_assessment.angular_separation_deg:.2f}° (C/I={asi_assessment.carrier_to_adjacent_interference_db:.1f} dB, Teleport: {teleport_redundancy['active_station']})")
+    print(f"      -> AzerSky Debris Anomaly: {azersky_report.anomaly_classification} (E_k={azersky_report.kinetic_energy_joules/1000:.1f} kJ, Continuity: {azersky_report.service_continuity_plan})")
+    print(f"      -> Geostationary & Fleet Validation Saved: {geo_json_path}")
 
     # Phase 8: Pipeline Artifact Verification & Schema Integrity Gate
     print("\n[Phase 8/8] Verifying artifact integrity and physical consistency...")

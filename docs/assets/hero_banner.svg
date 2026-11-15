@@ -372,13 +372,13 @@
         <text class="hud-text" x="215" y="16" font-size="9" fill="#34d399" font-weight="700" text-anchor="end">CLEAR</text>
       </g>
 
-      <!-- Item 6: Türksat Fleet Operations -->
+      <!-- Item 6: Regional Satellite Fleet Operations -->
       <g transform="translate(242, 96)">
         <rect x="0" y="0" width="225" height="42" rx="4" fill="#0f172a" stroke="#1e293b" stroke-width="1" />
         <circle cx="12" cy="14" r="3.5" fill="#38bdf8" />
-        <text class="hud-text" x="22" y="16" font-size="10" fill="#f8fafc" font-weight="700">TÜRKSAT 1A-6A FLEET</text>
-        <text class="hud-text" x="22" y="30" font-size="8.5" fill="#64748b">EOR radiation, zero-B desat, AUPC</text>
-        <text class="hud-text" x="215" y="16" font-size="9" fill="#38bdf8" font-weight="700" text-anchor="end">GEO LOCK</text>
+        <text class="hud-text" x="22" y="16" font-size="10" fill="#f8fafc" font-weight="700">TÜRKSAT &amp; AZERCOSMOS</text>
+        <text class="hud-text" x="22" y="30" font-size="8.5" fill="#64748b">EOR radiation, 0.9° ASI, AzerSky</text>
+        <text class="hud-text" x="215" y="16" font-size="9" fill="#38bdf8" font-weight="700" text-anchor="end">FLEET OK</text>
       </g>
     </g>
 
@@ -399,7 +399,7 @@
       INTERACTIVE 3D WEBGL VISUALIZER: <tspan fill="#38bdf8">https://isihussain.github.io/open-starship/</tspan> • 0 Dependencies • Pure Three.js
     </text>
     <text class="hud-text" x="1005" y="12" font-size="10" fill="#64748b" text-anchor="end">
-      TESTS: 99/99 PASSING [GREEN]
+      TESTS: 108/108 PASSING [GREEN]
     </text>
   </g>
 </svg>

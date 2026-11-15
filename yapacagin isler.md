@@ -135,3 +135,26 @@ This document tracks planned development phases and architecture milestones for 
   - Preserved verbatim developer note, GitHub Sponsors link, and Oxide compiler link.
 - [x] 9.4 Verify 100% compliance with zero AI slop writing rules.
 - [x] 9.5 Verify all 99 unit tests passing across all four packages.
+
+---
+
+## Phase 10: Azercosmos Satellite Fleet Integration (Azerspace-1, Azerspace-2 & AzerSky)
+- [x] 10.1 Research and ground operational parameters, mission histories, and space anomalies for the Azercosmos fleet (Space Agency of the Republic of Azerbaijan):
+  - Azerspace-1 (46.0°E, Star-2.4, hybrid C/Ku-band, launched Feb 2013).
+  - Azerspace-2 / Intelsat 38 (45.1°E, SSL-1300, Ku-band, launched Sep 2018).
+  - AzerSky / SPOT 7 (Sun-synchronous LEO 694.9 km, Astrosat-500, launched June 2014, anomaly March 17, 2023).
+  - Ground control teleport redundancy: Absheron Main Ground Control Station (Tier 4 WTA) and Nakhchivan Reserve Ground Control Station.
+- [x] 10.2 Implement `starship_geo_sat/azercosmos_orbital_coordination.py`:
+  - 0.9° orbital proximity Adjacent Satellite Interference (ASI) model between 45.1°E and 46.0°E.
+  - ITU-R S.580 / S.465 off-axis antenna sidelobe roll-off envelopes for ground apertures (1.2m VSAT to 9.0m teleports).
+  - Carrier-to-Adjacent-Interference $(C/I)_{\text{ASI}}$ ratio and DVB-S2X Adaptive Coding and Modulation (ACM) selection.
+  - Automated teleport failover from Absheron to Nakhchivan during localized rain fade.
+- [x] 10.3 Implement `starship_geo_sat/azersky_debris_conjunction.py`:
+  - LEO Sun-Synchronous Orbit circular velocity ($7.51\text{ km/s}$) and period ($98.7\text{ min}$) dynamics.
+  - Hypervelocity kinetic impact energy solver ($E_k = \frac{1}{2} m v^2$) and Cour-Palais penetration depth in aluminum bus skin.
+  - Telemetry loss diagnosis: distinguishes hypervelocity micro-debris power harness severance (single intact body in US SSN catalog) from explosive fragmentation.
+  - Post-impact tumbling disturbance rate estimator ($\boldsymbol{\omega}_{\text{tumble}}$) and SPOT-6 twin service continuity fallback.
+- [x] 10.4 Author comprehensive unit tests (`test_azercosmos_operations.py`) expanding suite verification from 99 to 108 passing tests.
+- [x] 10.5 Integrate Azercosmos and AzerSky evaluations into Phase 7 of `run_pipeline.py` and validate artifacts in `pipeline_artifacts/geo_satellite_validation.json`.
+- [x] 10.6 Extend 3D WebGL cockpit (`visualizer/index.html`) with Azercosmos 0.9° ASI guard and AzerSky debris collision diagnostics panels.
+- [x] 10.7 Update root `README.md` and `docs/assets/hero_banner.svg` with Azercosmos fleet specifications, equations, and 108 tests badge.

@@ -97,6 +97,14 @@ open visualizer/index.html
    - *Failure Mode:* Terrestrial uplink cross-polarization leakage (XPI < 25 dB), TWTA amplifier saturation from rogue high-power carriers, and severe Ka-band attenuation (15 to 20 dB) during heavy rainstorms.
    - *Architecture:* Models Saleh non-linear TWTA gain compression and IMD3 intermodulation distortion, flags cross-polarization violations, and calculates Automated Uplink Power Control (AUPC) feedback boosts.
 
+6. **`azercosmos_orbital_coordination.py` (Azerspace-1 & Azerspace-2):**
+   - *Operational Bottleneck:* 0.9° angular separation between Azerspace-1 (46.0°E) and Azerspace-2 (45.1°E) exceeds the 3 dB beamwidth of standard user earth stations (1.2m to 2.4m dishes), creating Adjacent Satellite Interference (ASI) and self-jamming risk on overlapping Ku-band channels.
+   - *Architecture:* Evaluates ITU-R S.580/S.465 off-axis sidelobe discrimination, computes $(C/I)_{\text{ASI}}$, selects DVB-S2X adaptive coding and modulation (ACM: 32APSK, 16APSK, 8PSK, QPSK), and coordinates automated failover between Absheron Main Teleport and Nakhchivan Reserve Teleport.
+
+7. **`azersky_debris_conjunction.py` (AzerSky / SPOT 7):**
+   - *Failure Mode:* Sudden communication loss on March 17, 2023 at 19:34–20:48 UTC while the satellite remained on its nominal 694.9 km Sun-Synchronous Orbit (confirmed by US Space Surveillance Network), indicating an untracked hypervelocity micro-debris strike severing the main power harness without catastrophic hull disintegration.
+   - *Architecture:* Calculates hypervelocity impact kinetic energy ($E_k = \frac{1}{2} m v^2$) and Cour-Palais penetration depth in aluminum bus skin, estimates post-impact tumbling rate ($\boldsymbol{\omega}_{\text{tumble}}$), and commands Earth observation continuity fallback to twin SPOT-6 imagery and Azersky-2 constellation tasking.
+
 ---
 
 ## 5. Systems Compiler & Avionics Integration (Oxide)
