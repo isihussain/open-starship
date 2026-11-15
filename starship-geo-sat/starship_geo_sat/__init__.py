@@ -25,6 +25,12 @@ from .electric_orbit_raising import (
     EORThrusterConfig,
     SolarArraySpec,
     EORProgressReport,
+    CathodeErosionReport,
+)
+from .eclipse_thermal_model import (
+    EclipseThermalSimulator,
+    BatteryBankSpec,
+    EclipseThermalReport,
 )
 from .reaction_wheel_desat import (
     ReactionWheelDesaturator,
@@ -51,6 +57,10 @@ __all__ = [
     "EORThrusterConfig",
     "SolarArraySpec",
     "EORProgressReport",
+    "CathodeErosionReport",
+    "EclipseThermalSimulator",
+    "BatteryBankSpec",
+    "EclipseThermalReport",
     "ReactionWheelDesaturator",
     "WheelAssemblyState",
     "SolarPressureProperties",

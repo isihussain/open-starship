@@ -3,9 +3,17 @@ starship-flip-gnc: Starship landing flip trajectory, guidance, and aerospace saf
 """
 
 from .models import StarshipVehicle, EngineCluster, FlightState, TVCActuator
-from .aerodynamics import AerodynamicModel, Atmosphere, WindModel
+from .aerodynamics import (
+    AerodynamicModel,
+    Atmosphere,
+    WindModel,
+    StandardAtmosphere1976,
+    RadiativeEquilibriumThermalModel,
+    DrydenTurbulenceModel,
+)
+from .quaternion_attitude import Quaternion, AttitudeKinematics
 from .trajectory import TrajectoryOptimizer, SimulationResult
-from .telemetry import TelemetryRecord, TelemetryLogger
+from .telemetry import TelemetryRecord, TelemetryLogger, TelemetryIntegritySigner
 from .catch_dynamics import CatchEnvelope, CatchResult, MechazillaCatchSolver
 from .native_bridge import NativeFlightCoreBridge
 from .test_stand_safety import (
@@ -46,10 +54,16 @@ __all__ = [
     "AerodynamicModel",
     "Atmosphere",
     "WindModel",
+    "StandardAtmosphere1976",
+    "RadiativeEquilibriumThermalModel",
+    "DrydenTurbulenceModel",
+    "Quaternion",
+    "AttitudeKinematics",
     "TrajectoryOptimizer",
     "SimulationResult",
     "TelemetryRecord",
     "TelemetryLogger",
+    "TelemetryIntegritySigner",
     "CatchEnvelope",
     "CatchResult",
     "MechazillaCatchSolver",

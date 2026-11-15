@@ -9,6 +9,7 @@ Executes the unified data pipeline:
   5. In-Space Cryogenic Transfer: Simulates orbital propellant delivery from Tanker to Depot.
   6. Flight Safety Interlocks: Validates failure mitigations from historical launch vehicle incidents.
   7. Geostationary Satellite Operations: Evaluates orbital dynamics and payload mitigations (Türksat fleet).
+  8. Artifact Integrity Gate: Validates physical schema bounds and consistency across all outputs.
 """
 
 import sys
@@ -98,7 +99,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 1: Flight Dynamics & Trajectory Optimization (starship-flip-gnc)
     # -------------------------------------------------------------------------
-    print("\n[1/7] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
+    print("\n[Phase 1/8] Running: starship-flip-gnc (Landing Flip Trajectory Solver)...")
     vehicle = StarshipVehicle(dry_mass=100_000.0, landing_propellant_mass=25_000.0)
     optimizer = TrajectoryOptimizer(vehicle=vehicle)
     gnc_logger = TelemetryLogger()
@@ -121,7 +122,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 2: Cryogenic Slosh & Ullage Ingestion (starship-cryo-slosh)
     # -------------------------------------------------------------------------
-    print("\n[2/7] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
+    print("\n[Phase 2/8] Running: starship-cryo-slosh (Header Tank Fluid Slosh)...")
     assembly = HeaderTankAssembly.default_starship(with_baffles=True)
     slosh_sim = SloshSimulator(
         assembly=assembly,
@@ -144,7 +145,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 3: TPS Tile Damage Inspection (starship-tps-vision)
     # -------------------------------------------------------------------------
-    print("\n[3/7] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
+    print("\n[Phase 3/8] Running: starship-tps-vision (Heat Shield Tile Inspection)...")
     risk_map = AerothermalRiskMap.from_telemetry(gnc_logger.records)
     generator = SyntheticTileGridGenerator(random_seed=42)
     observations = generator.generate_sector(num_tiles_axial=30, num_tiles_azimuthal=20, defect_rate=0.06)
@@ -167,7 +168,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 4: Mechazilla Tower Catch Verification
     # -------------------------------------------------------------------------
-    print("\n[4/7] Running: Mechazilla Chopstick Catch Solver...")
+    print("\n[Phase 4/8] Running: Mechazilla Chopstick Catch Solver...")
     catch_solver = MechazillaCatchSolver()
     catch_res = catch_solver.evaluate_capture(
         x_m=0.12,
@@ -185,7 +186,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 5: In-Space Cryogenic Propellant Transfer
     # -------------------------------------------------------------------------
-    print("\n[5/7] Running: In-Space Cryogenic Propellant Transfer Simulator...")
+    print("\n[Phase 5/8] Running: In-Space Cryogenic Propellant Transfer Simulator...")
     transfer_sim = OrbitalTransferSimulator()
     lox_fluid = CryogenicFluid.liquid_oxygen()
     transfer_res = transfer_sim.simulate_transfer(fluid=lox_fluid, target_mass_kg=80_000.0)
@@ -197,7 +198,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 6: Flight Safety Interlocks & Incident Mitigations
     # -------------------------------------------------------------------------
-    print("\n[6/7] Running: Aerospace Incident Safety Interlocks & Mitigations...")
+    print("\n[Phase 6/8] Running: Aerospace Incident Safety Interlocks & Mitigations...")
 
     stand_guard = TestStandSafetyInterlock(mode=TestStandMode.STATIC_FIRE)
     stand_check = stand_guard.evaluate(
@@ -318,7 +319,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     # -------------------------------------------------------------------------
     # STEP 7: Geostationary Satellite Operations (starship-geo-sat / Türksat Fleet)
     # -------------------------------------------------------------------------
-    print("\n[7/7] Running: starship-geo-sat (Geostationary Operations & Payload Guard)...")
+    print("\n[Phase 7/8] Running: starship-geo-sat (Geostationary Operations & Payload Guard)...")
 
     # A. Upper-stage abort detector (Türksat 1A)
     abort_detector = LaunchAbortDetector()

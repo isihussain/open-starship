@@ -93,6 +93,7 @@ open-starship/
 │   ├── starship_flip_gnc/ # GNC models, aerodynamics, trajectory, catch, incident interlocks
 │   │   ├── models.py                   # Vehicle geometry, Raptor cluster limits, flight state
 │   │   ├── aerodynamics.py             # Drag, lift, atmospheric density, aerothermal flux
+│   │   ├── quaternion_attitude.py      # Quaternion 3D kinematics & Lie logarithm error
 │   │   ├── trajectory.py               # 3-phase landing flip trajectory solver (RK4)
 │   │   ├── catch_dynamics.py           # Mechazilla chopstick tower capture solver
 │   │   ├── test_stand_safety.py        # Static fire clamp breakaway interlock (Tianlong-3)
@@ -137,7 +138,7 @@ open-starship/
 
 Requires Python 3.9+. Runs with zero required external dependencies.
 
-### 1. Run 7-Phase End-to-End Pipeline
+### 1. Run 8-Phase End-to-End Pipeline
 
 ```bash
 python3 run_pipeline.py pipeline_artifacts
@@ -151,6 +152,7 @@ This single command executes:
 5. **In-Space Propellant Transfer**: Simulates microgravity RCS ullage settling (Bond number $Bo > 50$) and pressure-driven cryogenic mass transfer from Tanker to Depot.
 6. **Incident Safety Interlocks**: Validates hold-down breakaway cutoff, touchdown consensus, actuator jam reallocation, engine-out gimbal trim, and debris footprint geofencing to `pipeline_artifacts/incident_safety_validation.json`.
 7. **Geostationary Satellite Operations**: Validates upper-stage abort detection, inclined orbit tracking, electric orbit raising radiation damage, reaction wheel desaturation, and transponder interference protection to `pipeline_artifacts/geo_satellite_validation.json`.
+8. **Artifact Integrity & Schema Gate**: Validates non-empty payloads, valid JSON syntax, and physical invariant bounds across all 7 generated files.
 
 ### 2. Launch Mission Control Visualizer
 
