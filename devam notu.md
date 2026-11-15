@@ -111,3 +111,10 @@ open visualizer/index.html
 - **starship-cryo-slosh:** Couple with 3D Smoothed Particle Hydrodynamics (SPH) solver for chaotic violent slosh regimes.
 - **starship-tps-vision:** Connect PyTorch YOLOv8 / Segment Anything (SAM) weights trained on drone inspection footage from the Starbase launch tower.
 - **starship-geo-sat:** Expand to include high-altitude lunar relay constellation cross-links and laser inter-satellite links (ISL).
+
+---
+
+## 7. Visual Documentation & Asset Maintenance
+- Animated SVG hero banners and visualizer preview cards reside under `docs/assets/`.
+- `hero_banner.svg` uses standard CSS keyframes for plume flicker, supersonic shock diamonds, and laser guides without JavaScript dependencies.
+- `README.md` uses native GitHub Mermaid syntax (`flowchart TD` and `sequenceDiagram`) which automatically render on GitHub web and mobile. All new subsystem workflows should be mirrored in both Mermaid and the 3D visualizer.

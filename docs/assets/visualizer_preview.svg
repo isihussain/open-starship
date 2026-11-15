@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420" width="100%" height="auto">
+  <defs>
+    <linearGradient id="visBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="100%" stop-color="#020408" />
+    </linearGradient>
+
+    <linearGradient id="viewportSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#030712" />
+      <stop offset="60%" stop-color="#0b172d" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+
+    <linearGradient id="neonCyan" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+
+    <linearGradient id="activeTabGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <style>
+      @keyframes pulseLive {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.3; transform: scale(0.9); }
+      }
+      @keyframes chartSweep {
+        0% { stroke-dashoffset: 400; }
+        100% { stroke-dashoffset: 0; }
+      }
+      .pulse-beacon {
+        animation: pulseLive 1.6s infinite ease-in-out;
+      }
+      .anim-trace {
+        stroke-dasharray: 400;
+        animation: chartSweep 3s ease-out forwards;
+      }
+      .term-font {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+    </style>
+  </defs>
+
+  <!-- Browser / Desktop Application Window Frame -->
+  <rect width="1000" height="420" rx="12" fill="url(#visBg)" stroke="#1e293b" stroke-width="1.5" />
+
+  <!-- Window Header Bar -->
+  <rect width="1000" height="38" rx="12" fill="#0f172a" />
+  <rect y="26" width="1000" height="12" fill="#0f172a" />
+  <line x1="0" y1="38" x2="1000" y2="38" stroke="#1e293b" stroke-width="1" />
+
+  <!-- Window Control Buttons (macOS style) -->
+  <circle cx="20" cy="19" r="5" fill="#ef4444" />
+  <circle cx="38" cy="19" r="5" fill="#f59e0b" />
+  <circle cx="56" cy="19" r="5" fill="#10b981" />
+
+  <!-- URL / Breadcrumb Bar -->
+  <rect x="90" y="8" width="540" height="22" rx="5" fill="#090d16" stroke="#334155" stroke-width="0.8" />
+  <circle class="pulse-beacon" cx="106" cy="19" r="3.5" fill="#38bdf8" />
+  <text class="term-font" x="120" y="23" font-size="10.5" fill="#94a3b8">
+    https://isihussain.github.io/open-starship/ <tspan fill="#38bdf8">[WebGL 3D Engine]</tspan>
+  </text>
+
+  <!-- Quick Status on Right -->
+  <text class="term-font" x="980" y="23" font-size="10" fill="#22c55e" font-weight="700" text-anchor="end">
+    ● 60 FPS // THREE.JS R128 // 0 DEPENDENCIES
+  </text>
+
+  <!-- 5 TABS NAVIGATION BAR -->
+  <g transform="translate(16, 48)">
+    <!-- Tab 1: Flight & GNC (Active) -->
+    <rect x="0" y="0" width="180" height="30" rx="5" fill="url(#activeTabGrad)" stroke="#38bdf8" stroke-width="1.2" />
+    <text class="term-font" x="90" y="19" font-size="11" fill="#ffffff" font-weight="700" text-anchor="middle">🚀 1. FLIGHT &amp; GNC</text>
+
+    <!-- Tab 2: Cryo Slosh -->
+    <rect x="188" y="0" width="180" height="30" rx="5" fill="#0f172a" stroke="#1e293b" stroke-width="1" />
+    <text class="term-font" x="278" y="19" font-size="11" fill="#94a3b8" font-weight="600" text-anchor="middle">🌊 2. CRYO SLOSH</text>
+
+    <!-- Tab 3: Safety Interlocks -->
+    <rect x="376" y="0" width="195" height="30" rx="5" fill="#0f172a" stroke="#1e293b" stroke-width="1" />
+    <text class="term-font" x="473" y="19" font-size="11" fill="#94a3b8" font-weight="600" text-anchor="middle">🛡️ 3. SAFETY INTERLOCKS</text>
+
+    <!-- Tab 4: Türksat GEO-SAT -->
+    <rect x="579" y="0" width="195" height="30" rx="5" fill="#0f172a" stroke="#1e293b" stroke-width="1" />
+    <text class="term-font" x="676" y="19" font-size="11" fill="#94a3b8" font-weight="600" text-anchor="middle">🛰️ 4. TÜRKSAT GEO-SAT</text>
+
+    <!-- Tab 5: TPS Heat Shield -->
+    <rect x="782" y="0" width="186" height="30" rx="5" fill="#0f172a" stroke="#1e293b" stroke-width="1" />
+    <text class="term-font" x="875" y="19" font-size="11" fill="#94a3b8" font-weight="600" text-anchor="middle">🛡️ 5. TPS TILES</text>
+  </g>
+
+  <!-- MAIN SPLIT WORKSPACE -->
+  <!-- Left Side: 3D Viewport Simulation (Width: 620, Height: 320) -->
+  <g transform="translate(16, 88)">
+    <rect width="620" height="316" rx="8" fill="url(#viewportSky)" stroke="#1e293b" stroke-width="1.2" />
+
+    <!-- 3D Perspective Ground Grid (Pad 39A / Starbase) -->
+    <g opacity="0.4" stroke="#38bdf8" stroke-width="0.8">
+      <line x1="0" y1="280" x2="620" y2="280" />
+      <line x1="0" y1="295" x2="620" y2="295" />
+      <line x1="0" y1="310" x2="620" y2="310" />
+      <line x1="310" y1="260" x2="80" y2="316" />
+      <line x1="310" y1="260" x2="200" y2="316" />
+      <line x1="310" y1="260" x2="310" y2="316" />
+      <line x1="310" y1="260" x2="420" y2="316" />
+      <line x1="310" y1="260" x2="540" y2="316" />
+    </g>
+
+    <!-- Mechazilla Catch Tower in 3D scene -->
+    <rect x="420" y="45" width="24" height="235" fill="#0f172a" stroke="#334155" stroke-width="1.2" />
+    <!-- Chopstick Arms -->
+    <path d="M420 160 L310 160 L310 172 L420 172 Z" fill="#1e293b" stroke="#0ea5e9" stroke-width="1.2" />
+    <circle cx="322" cy="166" r="3" fill="#10b981" />
+
+    <!-- 3D Starship in Flip Descent (Belly to Vertical Maneuver) -->
+    <!-- Thrust Plume -->
+    <polygon points="340,205 348,260 332,260" fill="#38bdf8" opacity="0.8" filter="url(#glow)" />
+    <polygon points="340,205 345,245 335,245" fill="#ffffff" filter="url(#glow)" />
+    <!-- Vehicle Hull -->
+    <path d="M340,110 Q340,110 348,135 L332,135 Z" fill="#cbd5e1" />
+    <rect x="332" y="135" width="16" height="70" fill="#64748b" rx="2" />
+    <rect x="332" y="135" width="4" height="70" fill="#0f172a" />
+    <!-- Flaps -->
+    <polygon points="332,138 322,144 322,152 332,148" fill="#334155" />
+    <polygon points="348,138 358,144 358,152 348,148" fill="#475569" />
+    <polygon points="332,188 318,198 318,208 332,204" fill="#1e293b" />
+    <polygon points="348,188 362,198 362,208 348,204" fill="#334155" />
+
+    <!-- 3D Viewport HUD Overlay -->
+    <g transform="translate(16, 16)">
+      <rect x="0" y="0" width="180" height="68" rx="4" fill="#030712" fill-opacity="0.75" stroke="#1e293b" stroke-width="1" />
+      <text class="term-font" x="10" y="18" font-size="9.5" fill="#94a3b8">FLIGHT TIME: <tspan fill="#ffffff" font-weight="700">T+ 34.20 s</tspan></text>
+      <text class="term-font" x="10" y="34" font-size="9.5" fill="#94a3b8">ALTITUDE:    <tspan fill="#38bdf8" font-weight="700">142.6 m</tspan></text>
+      <text class="term-font" x="10" y="50" font-size="9.5" fill="#94a3b8">VELOCITY:    <tspan fill="#f43f5e" font-weight="700">-18.4 m/s</tspan></text>
+      <text class="term-font" x="10" y="62" font-size="8.5" fill="#10b981">MECHAZILLA CATCH GATE: READY</text>
+    </g>
+
+    <!-- Camera Control Pills at bottom of 3D Viewport -->
+    <g transform="translate(16, 276)">
+      <rect x="0" y="0" width="588" height="26" rx="4" fill="#030712" fill-opacity="0.85" stroke="#1e293b" stroke-width="0.8" />
+      <text class="term-font" x="14" y="17" font-size="9" fill="#94a3b8">
+        CAMERA: <tspan fill="#38bdf8">[ORBIT]</tspan> [CHASE] [TOWER] [NOZZLE] • DRAG TO ROTATE • SCROLL TO ZOOM
+      </text>
+    </g>
+  </g>
+
+  <!-- Right Side: Real-Time Charts & Subsystem Gauges (Width: 332, Height: 316) -->
+  <g transform="translate(652, 88)">
+    <rect width="332" height="316" rx="8" fill="#090e1a" stroke="#1e293b" stroke-width="1.2" />
+
+    <!-- Chart 1: Altitude & Descent Profile -->
+    <g transform="translate(14, 14)">
+      <rect width="304" height="88" rx="4" fill="#030712" stroke="#1f2937" stroke-width="1" />
+      <text class="term-font" x="10" y="16" font-size="9.5" fill="#94a3b8" font-weight="700">ALTITUDE PROFILE (m vs s)</text>
+      <text class="term-font" x="294" y="16" font-size="9" fill="#38bdf8" text-anchor="end">142.6 m</text>
+      <!-- Chart line curve -->
+      <path class="anim-trace" d="M12,24 Q60,26 120,40 T220,70 L292,80" fill="none" stroke="#38bdf8" stroke-width="2" />
+    </g>
+
+    <!-- Chart 2: Vertical Velocity Deceleration -->
+    <g transform="translate(14, 110)">
+      <rect width="304" height="88" rx="4" fill="#030712" stroke="#1f2937" stroke-width="1" />
+      <text class="term-font" x="10" y="16" font-size="9.5" fill="#94a3b8" font-weight="700">VERTICAL VELOCITY (m/s)</text>
+      <text class="term-font" x="294" y="16" font-size="9" fill="#f43f5e" text-anchor="end">-18.4 m/s</text>
+      <!-- Deceleration curve -->
+      <path class="anim-trace" d="M12,28 Q80,30 160,55 T240,75 L292,80" fill="none" stroke="#f43f5e" stroke-width="2" />
+    </g>
+
+    <!-- Gauges & Telemetry Invariants Block -->
+    <g transform="translate(14, 206)">
+      <rect width="304" height="96" rx="4" fill="#030712" stroke="#1f2937" stroke-width="1" />
+      <text class="term-font" x="10" y="16" font-size="9.5" fill="#94a3b8" font-weight="700">SUBSYSTEM STATUS MATRIX</text>
+
+      <!-- Metric 1: TVC Gimbal -->
+      <text class="term-font" x="10" y="36" font-size="9" fill="#64748b">TVC GIMBAL</text>
+      <text class="term-font" x="100" y="36" font-size="9.5" fill="#34d399" font-weight="700">+4.2° PITCH</text>
+      <circle cx="288" cy="33" r="3.5" fill="#10b981" />
+
+      <!-- Metric 2: Ullage Gas Ingestion Risk -->
+      <text class="term-font" x="10" y="54" font-size="9" fill="#64748b">GAS INGESTION</text>
+      <text class="term-font" x="100" y="54" font-size="9.5" fill="#10b981" font-weight="700">0.00% [SAFE]</text>
+      <circle cx="288" cy="51" r="3.5" fill="#10b981" />
+
+      <!-- Metric 3: Touchdown Gate -->
+      <text class="term-font" x="10" y="72" font-size="9" fill="#64748b">TOUCHDOWN GATE</text>
+      <text class="term-font" x="100" y="72" font-size="9.5" fill="#38bdf8" font-weight="700">DUAL CONSENSUS ARMED</text>
+      <circle cx="288" cy="69" r="3.5" fill="#38bdf8" />
+
+      <!-- Metric 4: Türksat EOR / Rain Fade -->
+      <text class="term-font" x="10" y="88" font-size="9" fill="#64748b">TÜRKSAT AUPC</text>
+      <text class="term-font" x="100" y="88" font-size="9.5" fill="#e0e7ff" font-weight="700">+4.8 dB MARGIN</text>
+      <circle cx="288" cy="85" r="3.5" fill="#10b981" />
+    </g>
+  </g>
+</svg>
