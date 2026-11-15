@@ -52,6 +52,19 @@ class SloshSimulationResult:
     summary_message: str
 
 
+@dataclass
+class GaugingEstimate:
+    """
+    Fused propellant mass estimate and uncertainty metrics.
+    """
+    fused_mass_kg: float
+    uncertainty_1sigma_kg: float
+    uncertainty_percent: float
+    pvt_mass_kg: float
+    capacitive_mass_kg: float
+    sensor_concordance: bool
+
+
 class SloshSimulator:
     """
     Executes coupled time-stepping simulation of LOX and CH4 header tanks
@@ -247,3 +260,53 @@ class SloshSimulator:
             summary_message=msg,
         )
         return result, history
+
+
+class MultiModalPropellantGaugingModel:
+    """
+    Fuses PVT (Pressure-Volume-Temperature ideal gas ullage state estimator) with
+    capacitive/acoustic liquid level sensor probes to reduce mass gauging uncertainty.
+    """
+
+    def __init__(
+        self,
+        tank_volume_m3: float = 15.6,
+        propellant_density_kg_m3: float = 1141.0,
+        pvt_sigma_percent: float = 4.5,
+        capacitive_sigma_percent: float = 2.0,
+    ):
+        self.tank_vol = tank_volume_m3
+        self.rho = propellant_density_kg_m3
+        self.pvt_sigma_pct = pvt_sigma_percent
+        self.cap_sigma_pct = capacitive_sigma_percent
+
+    def fuse_gauging_estimate(
+        self,
+        pvt_mass_kg: float,
+        capacitive_mass_kg: float,
+    ) -> GaugingEstimate:
+        """
+        Calculates minimum-variance fused propellant mass estimate.
+        """
+        sig_pvt = max(1.0, pvt_mass_kg * (self.pvt_sigma_pct / 100.0))
+        sig_cap = max(1.0, capacitive_mass_kg * (self.cap_sigma_pct / 100.0))
+
+        # Inverse variance weighting:
+        w_pvt = 1.0 / (sig_pvt ** 2)
+        w_cap = 1.0 / (sig_cap ** 2)
+
+        fused_mass = (w_pvt * pvt_mass_kg + w_cap * capacitive_mass_kg) / (w_pvt + w_cap)
+        fused_sigma = 1.0 / math.sqrt(w_pvt + w_cap)
+        sigma_pct = (fused_sigma / max(1.0, fused_mass)) * 100.0
+
+        discrepancy = abs(pvt_mass_kg - capacitive_mass_kg)
+        concordance = discrepancy <= (2.5 * math.hypot(sig_pvt, sig_cap))
+
+        return GaugingEstimate(
+            fused_mass_kg=round(fused_mass, 1),
+            uncertainty_1sigma_kg=round(fused_sigma, 2),
+            uncertainty_percent=round(sigma_pct, 2),
+            pvt_mass_kg=round(pvt_mass_kg, 1),
+            capacitive_mass_kg=round(capacitive_mass_kg, 1),
+            sensor_concordance=concordance,
+        )

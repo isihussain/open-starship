@@ -110,3 +110,38 @@ class MechazillaCatchSolver:
             contact_impulse_n=round(contact_force, 1),
             message=msg,
         )
+
+    def compute_hydro_pneumatic_pin_response(
+        self,
+        vehicle_mass_kg: float,
+        vz_mps: float,
+        k_spring_n_per_m: float = 1.2e7,
+        c_damping_n_s_per_m: float = 8.5e5,
+    ) -> Tuple[float, float, float]:
+        """
+        Calculates dynamic shock absorber deflection and peak load for hydro-pneumatic
+        catch arms upon pin engagement.
+
+        Returns:
+            (peak_displacement_m, peak_force_n, absorbed_energy_joules)
+        """
+        m = max(1000.0, vehicle_mass_kg)
+        v0 = abs(vz_mps)
+        g0 = 9.80665
+
+        # Static deflection under vehicle weight:
+        static_disp = (m * g0) / k_spring_n_per_m
+
+        # Dynamic kinetic energy absorbed over damper stroke:
+        omega_n = math.sqrt(k_spring_n_per_m / m)
+        zeta = c_damping_n_s_per_m / (2.0 * math.sqrt(k_spring_n_per_m * m))
+
+        # Peak dynamic deflection:
+        dynamic_disp = v0 / (omega_n * math.exp(zeta))
+        total_disp = static_disp + dynamic_disp
+
+        # Peak reaction force:
+        peak_force = k_spring_n_per_m * total_disp + c_damping_n_s_per_m * v0
+        energy_j = 0.5 * k_spring_n_per_m * (total_disp ** 2) + 0.5 * m * (v0 ** 2)
+
+        return (round(total_disp, 4), round(peak_force, 1), round(energy_j, 1))

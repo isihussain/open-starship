@@ -174,3 +174,23 @@ class ReactionWheelDesaturator:
             station_keeping_deadband_safe=deadband_ok,
             status_message=msg,
         )
+
+    def compute_sadm_stepping_disturbance(
+        self,
+        step_frequency_hz: float = 0.5,
+        step_angle_deg: float = 0.015,
+        sadm_inertia_kg_m2: float = 4.2,
+    ) -> Tuple[float, float]:
+        """
+        Calculates peak disturbance torque [N*m] and angular momentum ripple [N*m*s]
+        induced by Solar Array Drive Mechanism (SADM) stepper motor gear indexing.
+        """
+        step_rad = math.radians(step_angle_deg)
+        # Pulse acceleration: alpha ~ 4 * theta_step / t_pulse^2 (assuming 50% duty pulse)
+        t_pulse = 0.5 / max(0.01, step_frequency_hz)
+        alpha_pulse = 4.0 * step_rad / (t_pulse ** 2)
+
+        peak_torque_nm = sadm_inertia_kg_m2 * alpha_pulse
+        momentum_ripple_nms = peak_torque_nm * (t_pulse / 2.0)
+
+        return (round(peak_torque_nm, 5), round(momentum_ripple_nms, 5))

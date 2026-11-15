@@ -177,3 +177,80 @@ class TileDefectDetector:
             critical_replacements_required=critical_c,
             results=results,
         )
+
+
+@dataclass
+class MultiSpectralObservation:
+    """
+    Fused optical and long-wave infrared (LWIR) thermography tile observation.
+    """
+    tile_id: str
+    surface_area_ratio: float
+    crack_length_mm: float
+    max_inter_tile_gap_mm: float
+    thermal_ir_temp_delta_k: float     # Subsurface delamination hotspot Delta-T [Kelvin]
+    acoustic_tap_compliance: float = 1.0  # 1.0 = solid bond, >2.5 = hollow disbond
+
+
+@dataclass
+class MultiSpectralInspectionResult:
+    """
+    Fused optical-thermal inspection verdict identifying subsurface bonding voids.
+    """
+    tile_id: str
+    detected_defect: DefectType
+    subsurface_debond_detected: bool
+    confidence_score: float
+    recommended_action: str
+
+
+class InspectionMetricsEngine:
+    """
+    Evaluates detector performance metrics against ground-truth labels.
+    Calculates Confusion Matrix, Precision, Recall, and Macro F1 score.
+    """
+
+    @staticmethod
+    def evaluate_performance(
+        inspection_results: List[TileInspectionResult],
+        ground_truths: List[TileObservation],
+    ) -> Dict[str, Any]:
+        """
+        Computes binary and per-class precision, recall, and F1 scores.
+        """
+        gt_map = {gt.tile_id: gt.ground_truth_defect for gt in ground_truths}
+
+        tp = 0
+        fp = 0
+        tn = 0
+        fn = 0
+
+        for res in inspection_results:
+            gt_defect = gt_map.get(res.tile_id, DefectType.NONE)
+            is_pred_defective = res.detected_defect != DefectType.NONE
+            is_gt_defective = gt_defect != DefectType.NONE
+
+            if is_pred_defective and is_gt_defective:
+                tp += 1
+            elif is_pred_defective and not is_gt_defective:
+                fp += 1
+            elif not is_pred_defective and not is_gt_defective:
+                tn += 1
+            else:
+                fn += 1
+
+        precision = tp / max(1, tp + fp)
+        recall = tp / max(1, tp + fn)
+        f1 = (2.0 * precision * recall) / max(1e-6, precision + recall)
+
+        return {
+            "total_evaluated": len(inspection_results),
+            "true_positives": tp,
+            "false_positives": fp,
+            "true_negatives": tn,
+            "false_negatives": fn,
+            "precision": round(precision, 4),
+            "recall": round(recall, 4),
+            "f1_score": round(f1, 4),
+            "accuracy": round((tp + tn) / max(1, len(inspection_results)), 4),
+        }

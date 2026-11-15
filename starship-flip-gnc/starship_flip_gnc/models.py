@@ -142,6 +142,32 @@ class StarshipVehicle:
         r = self.diameter / 2.0
         return m_total * (3.0 * (r ** 2) + (self.length ** 2)) / 12.0
 
+    def compute_full_inertia_tensor(self, propellant_mass: float) -> tuple[float, float, float]:
+        """
+        Computes principal moments of inertia (I_xx, I_yy, I_zz) [kg * m^2].
+        Includes parallel axis theorem (Steiner's theorem) term for nose header tank propellant.
+        
+        Returns:
+            tuple[float, float, float]: (I_pitch, I_yaw, I_roll) in body coordinates.
+        """
+        m_total = self.compute_total_mass(propellant_mass)
+        m_prop = max(0.0, propellant_mass)
+        r = self.diameter / 2.0
+        
+        # Base cylindrical distribution:
+        i_roll = 0.5 * m_total * (r ** 2)
+        i_pitch_base = m_total * (3.0 * (r ** 2) + (self.length ** 2)) / 12.0
+        
+        # Steiner offset contribution from nose LOX header tank (located at z ~ +20m):
+        com_z = self.compute_center_of_mass_z(propellant_mass)
+        z_header_tank = 20.0
+        steiner_offset = m_prop * ((z_header_tank - com_z) ** 2) * 0.15
+        
+        i_pitch = i_pitch_base + steiner_offset
+        i_yaw = i_pitch  # Axisymmetric cylindrical vehicle
+        
+        return (round(i_pitch, 1), round(i_yaw, 1), round(i_roll, 1))
+
     def compute_gimbal_moment_arm(self, propellant_mass: float) -> float:
         """
         Distance from vehicle center of mass to engine gimbal pivot [m].

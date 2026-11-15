@@ -8,6 +8,8 @@ to downstream cryo-slosh and TPS inspection pipelines.
 from dataclasses import dataclass, asdict
 import json
 import csv
+import hmac
+import hashlib
 from typing import List, Dict, Any
 from pathlib import Path
 
@@ -93,3 +95,29 @@ class TelemetryLogger:
         with open(file_path, "r", encoding="utf-8") as f:
             raw_list = json.load(f)
         return [TelemetryRecord(**item) for item in raw_list]
+
+
+class TelemetryIntegritySigner:
+    """
+    Cryptographic HMAC-SHA256 frame integrity signer and validator.
+    Prevents corrupt or tampered frames from being ingested by flight guidance computers.
+    """
+
+    @staticmethod
+    def sign_record(record_dict: Dict[str, Any], secret_key: str) -> str:
+        """
+        Calculates HMAC-SHA256 hex digest for a telemetry record dictionary.
+        """
+        serialized = json.dumps(record_dict, sort_keys=True)
+        key_bytes = secret_key.encode("utf-8")
+        data_bytes = serialized.encode("utf-8")
+        signature = hmac.new(key_bytes, data_bytes, hashlib.sha256).hexdigest()
+        return signature
+
+    @staticmethod
+    def verify_record(record_dict: Dict[str, Any], signature: str, secret_key: str) -> bool:
+        """
+        Validates HMAC signature in constant time against timing attacks.
+        """
+        expected_sig = TelemetryIntegritySigner.sign_record(record_dict, secret_key)
+        return hmac.compare_digest(expected_sig, signature)

@@ -66,6 +66,17 @@ class TrajectoryOptimizer:
             time_constant_s=self.vehicle.engines.time_constant_s,
         )
 
+    def compute_scheduled_gains(self, altitude_m: float) -> Tuple[float, float]:
+        """
+        Computes altitude-dependent scheduled PD gains for terminal landing control.
+        Tightens bandwidth at low altitude (z < 50m) to suppress ground effect disturbances.
+        """
+        z = max(0.0, altitude_m)
+        boost = math.exp(-z / 35.0)
+        kp = self.kp_pitch * (1.0 + 0.45 * boost)
+        kd = self.kd_pitch * (1.0 + 0.35 * boost)
+        return (round(kp, 3), round(kd, 3))
+
     def _compute_derivatives(
         self,
         state: FlightState,

@@ -192,3 +192,57 @@ class InclinedOrbitDynamics:
         el_deg = max(0.0, math.degrees(el_rad))
 
         return az_deg, el_deg
+
+    def compute_lunisolar_drift_rate(self, raan_deg: float) -> Tuple[float, float]:
+        """
+        Calculates instantaneous inclination rate (di/dt) and node precession rate (dRAAN/dt)
+        [degrees / year] under combined Lunar (mu_m) and Solar (mu_s) tidal potential.
+        """
+        raan_rad = math.radians(raan_deg)
+        # Lunar gravitational contribution (~0.55 deg/yr maximum):
+        di_dt_lunar = 0.55 * math.cos(raan_rad)
+        # Solar gravitational contribution (~0.27 deg/yr maximum):
+        di_dt_solar = 0.27 * math.cos(raan_rad)
+        total_di_dt = di_dt_lunar + di_dt_solar
+
+        # Nodal precession rate:
+        draan_dt = -0.045 * math.sin(raan_rad)
+
+        return (round(total_di_dt, 4), round(draan_dt, 4))
+
+    def compute_ground_station_doppler(
+        self,
+        gs: GroundStation,
+        uplink_freq_ghz: float,
+        time_hours: float,
+        inclination_deg: float,
+    ) -> Tuple[float, float, float]:
+        """
+        Calculates range rate [m/s], Doppler shift [Hz], and antenna tracking slew rate [deg/hr]
+        for a tracking ground station communicating with an inclined GEO spacecraft.
+
+        Returns:
+            (range_rate_mps, doppler_shift_hz, antenna_slew_rate_deg_hr)
+        """
+        c_light = 299_792_458.0
+        inc_rad = math.radians(inclination_deg)
+        omega_earth = 2.0 * math.pi / 24.0  # rad / hr
+
+        # Daily oscillatory velocity amplitude along line-of-sight:
+        v_orbit = 3075.0  # GEO orbital speed [m/s]
+        v_los_max = v_orbit * math.sin(inc_rad)
+
+        phase = omega_earth * time_hours
+        range_rate_mps = v_los_max * math.sin(phase)
+
+        f0_hz = uplink_freq_ghz * 1.0e9
+        doppler_shift_hz = -(f0_hz * range_rate_mps) / c_light
+
+        # Angular slew rate:
+        slew_rate_deg_hr = inclination_deg * math.degrees(omega_earth) * abs(math.cos(phase))
+
+        return (
+            round(range_rate_mps, 2),
+            round(doppler_shift_hz, 1),
+            round(slew_rate_deg_hr, 3),
+        )

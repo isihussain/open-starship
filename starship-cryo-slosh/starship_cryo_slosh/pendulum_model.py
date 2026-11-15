@@ -22,6 +22,17 @@ class SloshState:
     phi_dot_rad_s: float = 0.0 # Angular velocity of pendulum [rad/s]
 
 
+@dataclass
+class DualModeSloshState:
+    """
+    Coupled fundamental (m=1) and second-harmonic (m=2) slosh state.
+    """
+    phi1_rad: float = 0.0
+    phi1_dot_rad_s: float = 0.0
+    phi2_rad: float = 0.0
+    phi2_dot_rad_s: float = 0.0
+
+
 class EquivalentSloshModel:
     """
     Mechanical pendulum representation of first-mode fluid sloshing.
@@ -51,6 +62,10 @@ class EquivalentSloshModel:
         # Pendulum arm length:
         self.arm_length_lp = (r / 1.84) * math.tanh(1.84 * self.fill_fraction)
         self.arm_length_lp = max(0.15, min(r * 0.9, self.arm_length_lp))
+
+        # Second harmonic (m=2) slosh parameters (Bauer/Abramson spherical model):
+        self.m2 = self.m1 * 0.18
+        self.arm_length_lp2 = max(0.08, self.arm_length_lp * 0.42)
 
         # Nominal fluid depth at rest:
         self.h_nominal = 2.0 * r * self.fill_fraction
@@ -144,3 +159,36 @@ class EquivalentSloshModel:
         torque_pitch = f_slosh_lat * arm_to_com
 
         return f_slosh_lat, f_slosh_ax, torque_pitch
+
+    def compute_dual_mode_accelerations(
+        self,
+        state: DualModeSloshState,
+        accel_lateral_mps2: float,
+        accel_axial_mps2: float,
+        vehicle_pitch_rate_deg_s: float,
+        vehicle_pitch_accel_rad_s2: float = 0.0,
+    ) -> Tuple[float, float]:
+        """
+        Computes angular accelerations (phi1_ddot, phi2_ddot) for coupled fundamental
+        and second-harmonic slosh pendulum modes.
+        """
+        g_eff = max(0.1, math.hypot(accel_lateral_mps2, accel_axial_mps2))
+        phi_eq = math.atan2(accel_lateral_mps2, max(0.01, accel_axial_mps2))
+
+        # Mode 1 (fundamental):
+        omega1 = math.sqrt(g_eff / self.arm_length_lp)
+        zeta1 = self.tank.damping_ratio
+        damp1 = 2.0 * zeta1 * omega1 * state.phi1_dot_rad_s
+        rest1 = (g_eff / self.arm_length_lp) * math.sin(state.phi1_rad - phi_eq)
+        phi1_ddot = -damp1 - rest1 - vehicle_pitch_accel_rad_s2
+
+        # Mode 2 (second harmonic):
+        omega2 = math.sqrt(g_eff / self.arm_length_lp2)
+        zeta2 = self.tank.damping_ratio * 1.4  # Higher mode suffers greater viscous dissipation
+        damp2 = 2.0 * zeta2 * omega2 * state.phi2_dot_rad_s
+        # Secondary mode is driven by primary mode displacement non-linear coupling:
+        coupling_drive = 0.12 * omega1 * omega1 * math.sin(2.0 * state.phi1_rad)
+        rest2 = (g_eff / self.arm_length_lp2) * math.sin(state.phi2_rad - phi_eq)
+        phi2_ddot = -damp2 - rest2 - vehicle_pitch_accel_rad_s2 + coupling_drive
+
+        return phi1_ddot, phi2_ddot

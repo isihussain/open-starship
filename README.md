@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/isihussain/open-starship/actions/workflows/ci.yml/badge.svg)](https://github.com/isihussain/open-starship/actions/workflows/ci.yml)
 [![Live 3D Visualizer](https://img.shields.io/badge/Live%20Demo-3D%20Visualizer-38bdf8?style=flat-square&logo=google-chrome&logoColor=white)](https://isihussain.github.io/open-starship/)
-[![Tests](https://img.shields.io/badge/tests-69%20passed-22c55e.svg)](https://github.com/isihussain/open-starship)
+[![Tests](https://img.shields.io/badge/tests-99%20passed-22c55e.svg)](https://github.com/isihussain/open-starship)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-38bdf8.svg)](https://www.python.org)
 [![Compiler](https://img.shields.io/badge/verified%20by-Oxide%20C%2B%2B20-orange.svg)](https://github.com/isihussain/oxide-compiler)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -103,24 +103,28 @@ open-starship/
 │   │   ├── telemetry.py                # Flight telemetry logger and schema exporter
 │   │   └── native_bridge.py            # Python C-ABI FFI wrapper
 │   ├── native/            # Freestanding C99 core (starship_core.c)
-│   └── tests/             # Unit test suite (37 tests)
+│   └── tests/             # Unit test suite (52 tests)
 ├── starship-cryo-slosh/   # Cryogenic propellant slosh & orbital transfer simulator
 │   ├── starship_cryo_slosh/ # Tank geometry, pendulum model, simulator, orbital transfer
-│   └── tests/             # Unit test suite (11 tests)
+│   └── tests/             # Unit test suite (16 tests)
 ├── starship-tps-vision/   # TPS heat shield tile defect detection & work order pipeline
 │   ├── starship_tps_vision/ # Risk map, synthetic generator, detector, reporter
-│   └── tests/             # Unit test suite (7 tests)
+│   └── tests/             # Unit test suite (11 tests)
 ├── starship-geo-sat/      # Geostationary satellite operations & Türksat incident mitigations
 │   ├── starship_geo_sat/  # Launch abort, inclined orbit, electric orbit raising, desat, RFI guard
 │   │   ├── launch_abort_detector.py    # Cryogenic upper-stage turbopump abort (Türksat 1A)
 │   │   ├── inclined_orbit_dynamics.py  # Lunisolar drift & ground antenna tracking (Türksat 1B/1C)
 │   │   ├── electric_orbit_raising.py   # Hall-effect spiral & Van Allen radiation (Türksat 5A/5B)
+│   │   ├── eclipse_thermal_model.py    # Equinox shadow radiative cooldown & battery DoD
 │   │   ├── reaction_wheel_desat.py     # GEO zero-B reaction wheel desaturation (Türksat 6A)
 │   │   └── rfi_transponder_guard.py    # Cross-polarization leakage & Ka-band rain fade AUPC
-│   └── tests/             # Unit test suite (14 tests)
+│   └── tests/             # Unit test suite (20 tests)
+├── docs/                  # Technical documentation and architecture reviews
+│   ├── LAUNCH_KIT.md      # Launch and deployment guidelines
+│   └── CODE_REVIEWS_25.md # Comprehensive 25-module technical code review
 ├── visualizer/            # Standalone 3D Three.js flight & slosh browser visualizer
 │   └── index.html         # Interactive real-time 3D telemetry and tank cutaway app
-├── run_pipeline.py        # 7-phase end-to-end orchestration runner
+├── run_pipeline.py        # 8-phase end-to-end orchestration runner with artifact validation
 ├── yapacagin isler.md     # Milestone tracking specification
 ├── yaptigin isler.md      # Completed technical report & verification logs
 ├── devam notu.md          # Architectural handover notes for developers

@@ -150,12 +150,20 @@ class EngineOutCompensator:
             trim_pitch = math.atan2(-eng.offset_y_m, l_com)
             trim_yaw = math.atan2(-eng.offset_x_m, l_com)
 
-            if abs(trim_pitch) > vehicle.max_gimbal_limit_rad or abs(trim_yaw) > vehicle.max_gimbal_limit_rad:
+            # Spherical cone gimbal angle: theta_cone = sqrt(pitch^2 + yaw^2)
+            cone_angle = math.hypot(trim_pitch, trim_yaw)
+            if cone_angle > vehicle.max_gimbal_limit_rad:
                 controllable = False
 
             gimbal_trims[eng.engine_id] = (round(trim_pitch, 4), round(trim_yaw, 4))
 
-        # Burn duration reshaping using mass-flow and rocket equation
+        # Effective axial thrust accounting for gimbal vector cosine loss:
+        net_axial_thrust = sum(
+            throttle_cmds[e.engine_id] * e.max_rated_thrust_n * math.cos(math.hypot(gimbal_trims[e.engine_id][0], gimbal_trims[e.engine_id][1]))
+            for e in operational
+        )
+        twr = net_axial_thrust / weight_n
+        gravity_arrest_possible = twr > 1.0
         # Mass flow rate m_dot = T / (Isp * g0)
         g0 = self.GRAVITY_ACCEL_MPS2
         effective_exhaust_vel = vehicle.nominal_isp_s * g0

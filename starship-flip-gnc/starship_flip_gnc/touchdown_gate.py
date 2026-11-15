@@ -135,3 +135,44 @@ class TouchdownValidationGate:
             discrepancy_m=round(divergence, 3),
             message=msg,
         )
+
+    def validate_tipover_stability(
+        self,
+        pitch_deg: float,
+        roll_deg: float = 0.0,
+        horizontal_velocity_mps: float = 0.0,
+        cg_height_m: float = 20.0,
+        base_radius_m: float = 4.5,
+    ) -> Tuple[bool, float, str]:
+        """
+        Validates whether vehicle orientation and horizontal momentum remain within
+        the dynamic non-tip-over stability envelope upon ground contact.
+
+        Returns:
+            (is_stable, effective_tilt_deg, status_message)
+        """
+        total_tilt_rad = math.radians(math.hypot(pitch_deg, roll_deg))
+        h_cg = max(1.0, cg_height_m)
+        r_base = max(0.5, base_radius_m)
+
+        # Static critical tip angle:
+        theta_crit_rad = math.atan2(r_base, h_cg)
+
+        # Dynamic kinetic overturn contribution from horizontal kinetic energy:
+        # Kinetic energy E_k = 0.5 * m * v_h^2; Potential barrier Delta U = m * g * h_cg * (1 - cos(theta_crit - theta))
+        g0 = 9.80665
+        v_h = abs(horizontal_velocity_mps)
+        dynamic_tilt_equiv_rad = (v_h ** 2) / (2.0 * g0 * h_cg)
+
+        total_effective_tilt_rad = total_tilt_rad + dynamic_tilt_equiv_rad
+        eff_tilt_deg = math.degrees(total_effective_tilt_rad)
+        crit_tilt_deg = math.degrees(theta_crit_rad)
+
+        is_stable = total_effective_tilt_rad < (theta_crit_rad * 0.85)  # 15% safety factor
+
+        if is_stable:
+            msg = f"Touchdown stability verified: eff_tilt={eff_tilt_deg:.1f}° < critical {crit_tilt_deg:.1f}°."
+        else:
+            msg = f"TIP-OVER HAZARD: eff_tilt={eff_tilt_deg:.1f}° exceeds critical stability limit {crit_tilt_deg:.1f}°."
+
+        return is_stable, round(eff_tilt_deg, 2), msg

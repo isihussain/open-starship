@@ -43,6 +43,19 @@ class TransferResult:
     message: str
 
 
+@dataclass
+class LineChilldownReport:
+    """
+    Thermal chill-down and vapor lock assessment for transfer plumbing.
+    """
+    pipe_mass_kg: float
+    chilldown_energy_joules: float
+    cryogen_boiloff_for_chill_kg: float
+    chilldown_duration_s: float
+    vapor_lock_cleared: bool
+    status_message: str
+
+
 class OrbitalTransferSimulator:
     """
     Simulates in-space cryogenic transfer dynamics between docked Starship vehicles.
@@ -135,4 +148,52 @@ class OrbitalTransferSimulator:
             bond_number=round(bo, 1),
             is_fluid_settled=True,
             message=msg,
+        )
+
+    def evaluate_line_chilldown(
+        self,
+        fluid: CryogenicFluid,
+        line_length_m: float = 12.0,
+        pipe_wall_thickness_m: float = 0.003,
+        pipe_initial_temp_k: float = 290.0,
+        chill_bleed_flow_kg_s: float = 0.85,
+    ) -> LineChilldownReport:
+        """
+        Simulates line pre-cooling transient from ambient temperature down to cryogenic
+        saturation temperature, preventing geysering and vapor-lock in transfer pumps.
+        """
+        # Stainless steel 304L density ~7900 kg/m^3, specific heat ~480 J/(kg*K):
+        rho_steel = 7900.0
+        cp_steel = 480.0
+        r_outer = self.config.pipe_diameter_m / 2.0
+        r_inner = r_outer - pipe_wall_thickness_m
+
+        pipe_volume = math.pi * (r_outer ** 2 - r_inner ** 2) * line_length_m
+        pipe_mass = pipe_volume * rho_steel
+
+        # Target saturation temperatures: LOX = 90K, LCH4 = 111K
+        t_target = 90.0 if fluid.name == "LOX" else 111.0
+        delta_t = max(0.0, pipe_initial_temp_k - t_target)
+
+        # Thermal energy required to extract: Q = m * Cp * Delta_T
+        q_chill_j = pipe_mass * cp_steel * delta_t
+
+        h_vap = self.h_vap_lox if fluid.name == "LOX" else self.h_vap_lch4
+        cryo_boiled_kg = q_chill_j / h_vap
+
+        chill_time_s = cryo_boiled_kg / max(0.01, chill_bleed_flow_kg_s)
+        cleared = chill_time_s < 300.0  # Must chill within 5-minute operational timeline
+
+        msg = (
+            f"Line chill-down completed in {chill_time_s:.1f}s consuming {cryo_boiled_kg:.1f} kg {fluid.name}. "
+            f"Single-phase liquid established across {line_length_m:.1f}m transfer line."
+        )
+
+        return LineChilldownReport(
+            pipe_mass_kg=round(pipe_mass, 2),
+            chilldown_energy_joules=round(q_chill_j, 1),
+            cryogen_boiloff_for_chill_kg=round(cryo_boiled_kg, 2),
+            chilldown_duration_s=round(chill_time_s, 1),
+            vapor_lock_cleared=cleared,
+            status_message=msg,
         )

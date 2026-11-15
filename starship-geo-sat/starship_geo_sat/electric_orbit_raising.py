@@ -207,3 +207,52 @@ class ElectricOrbitRaisingSimulator:
         outer_contrib = 2.5e7 * math.exp(-0.5 * ((altitude_km - self.OUTER_BELT_ELECTRON_PEAK_KM) / outer_sigma) ** 2)
 
         return inner_contrib + outer_contrib
+
+    def evaluate_cathode_wear_and_efficiency(
+        self,
+        cumulative_firing_hours: float,
+        rated_cathode_lifetime_hours: float = 8000.0,
+    ) -> "CathodeErosionReport":
+        """
+        Calculates hollow cathode keeper sputter erosion and propellant mass utilization efficiency.
+        """
+        hours = max(0.0, cumulative_firing_hours)
+        erosion_fraction = min(1.0, hours / rated_cathode_lifetime_hours)
+
+        # Non-linear keeper voltage degradation:
+        nominal_keeper_voltage = 14.5
+        degraded_keeper_voltage = nominal_keeper_voltage + 3.2 * (erosion_fraction ** 1.5)
+
+        # Mass utilization efficiency: eta_m drops as channel wall erodes:
+        bol_efficiency = 0.92
+        current_efficiency = max(0.80, bol_efficiency - 0.08 * erosion_fraction)
+
+        remaining_hours = max(0.0, rated_cathode_lifetime_hours - hours)
+
+        msg = (
+            f"Cathode status: {hours:.0f}/{rated_cathode_lifetime_hours:.0f} hrs. "
+            f"Erosion={erosion_fraction * 100.0:.1f}%, Mass efficiency={current_efficiency * 100.0:.1f}%. "
+            f"{remaining_hours:.0f} hours operating margin remaining."
+        )
+
+        return CathodeErosionReport(
+            cumulative_firing_hours=round(hours, 1),
+            erosion_fraction=round(erosion_fraction, 4),
+            keeper_voltage_v=round(degraded_keeper_voltage, 2),
+            mass_utilization_efficiency=round(current_efficiency, 4),
+            remaining_lifetime_hours=round(remaining_hours, 1),
+            status_message=msg,
+        )
+
+
+@dataclass
+class CathodeErosionReport:
+    """
+    Electric thruster hollow cathode wear state and electrical efficiency metrics.
+    """
+    cumulative_firing_hours: float
+    erosion_fraction: float
+    keeper_voltage_v: float
+    mass_utilization_efficiency: float
+    remaining_lifetime_hours: float
+    status_message: str

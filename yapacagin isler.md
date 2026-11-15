@@ -79,3 +79,41 @@ This document tracks planned development phases and architecture milestones for 
 - [x] 7.8 Support JSON file loading from `run_pipeline.py` output (`pipeline_artifacts/flight_telemetry.json`) via drag-drop / file input.
 - [x] 7.9 Upgrade 3D scene: TPS tile detail on hull, 3 individual Raptor nozzle plumes, Mechazilla chopstick arm with catch pins, orbit camera toggle.
 - [x] 7.10 Add topbar status chips: mission clock, phase badge, slosh risk level, CI test count.
+
+---
+
+## Phase 8: Core Engineering Expansion, Bug Remediation & Technical Audit
+- [x] 8.1 Identify and patch 5 physical and numerical failure modes across flight and orbital mechanics modules.
+  - [x] 8.1.1 Patch signed lateral aerodynamic lift vector direction with body-relative pitch in `aerodynamics.py`.
+  - [x] 8.1.2 Include static gravitational weight support in Mechazilla pin contact load solver in `catch_dynamics.py`.
+  - [x] 8.1.3 Integrate radiation exposure over full elapsed step time (24h/day) in `electric_orbit_raising.py`.
+  - [x] 8.1.4 Include aerodynamic drag damping in instantaneous impact point divert $\Delta \mathbf{v}$ solver in `debris_hazard_predictor.py`.
+  - [x] 8.1.5 Evaluate multi-sensor altitude dispersion across all active channels in `touchdown_gate.py`.
+- [x] 8.2 Deliver 25 distinct technical contributions and modular enhancements across the suite:
+  - [x] 8.2.1 US Standard Atmosphere 1976 (USSA76) piecewise temperature gradient model.
+  - [x] 8.2.2 Stefan-Boltzmann radiative equilibrium surface temperature solver.
+  - [x] 8.2.3 Dryden continuous atmospheric turbulence spectrum generator.
+  - [x] 8.2.4 Center of mass shift and 3D principal moment of inertia tensor tracking.
+  - [x] 8.2.5 Quaternion attitude representation and exact Lie algebra logarithm error kinematics (`quaternion_attitude.py`).
+  - [x] 8.2.6 Gain-scheduled altitude-dependent bandwidth controller in `trajectory.py`.
+  - [x] 8.2.7 Dynamic tip-over stability and tilt angle validator in `touchdown_gate.py`.
+  - [x] 8.2.8 3D spherical cone TVC gimbal limiting and vector cosine loss in `engine_out_recovery.py`.
+  - [x] 8.2.9 Minimum-norm control allocator via Moore-Penrose right pseudo-inverse ($B B^T$ formulation).
+  - [x] 8.2.10 Hydro-pneumatic spring-damper chopstick pin impact dynamics model.
+  - [x] 8.2.11 Second-harmonic ($m=2$) slosh pendulum mode with non-linear fundamental mode coupling.
+  - [x] 8.2.12 Miles & Abramson annular ring baffle hydrodynamic damping ratio function in `tank.py`.
+  - [x] 8.2.13 Unvented cryogenic tank ullage thermodynamic self-pressurization model.
+  - [x] 8.2.14 Transfer line pre-cooling chill-down transient and vapor-lock prevention evaluator.
+  - [x] 8.2.15 Multi-modal propellant mass gauging sensor fusion (PVT + capacitive level probes).
+  - [x] 8.2.16 Hexagonal axial coordinate system $(q, r)$ and BFS spatial defect clustering.
+  - [x] 8.2.17 Multi-spectral optical and thermal infrared inspection fusion for subsurface voids.
+  - [x] 8.2.18 Inspection metrics engine (Confusion matrix, Precision, Recall, F1 score).
+  - [x] 8.2.19 Lunisolar third-body gravitational tidal drift equations in `inclined_orbit_dynamics.py`.
+  - [x] 8.2.20 Ground station Doppler frequency shift and antenna tracking slew rate solver.
+  - [x] 8.2.21 Equinox eclipse radiative cooldown and battery Depth-of-Discharge simulator (`eclipse_thermal_model.py`).
+  - [x] 8.2.22 Hall-effect thruster hollow cathode erosion and mass utilization efficiency model.
+  - [x] 8.2.23 Solar Array Drive Mechanism (SADM) stepper disturbance torque model.
+  - [x] 8.2.24 Cryptographic HMAC-SHA256 telemetry frame integrity signer and validator.
+  - [x] 8.2.25 Automated pipeline artifact integrity verifier and cross-schema gate in `run_pipeline.py`.
+- [x] 8.3 Author comprehensive 25-module technical code review document (`docs/CODE_REVIEWS_25.md`).
+- [x] 8.4 Author comprehensive unit test suites expanding verification coverage to 99 passing tests.

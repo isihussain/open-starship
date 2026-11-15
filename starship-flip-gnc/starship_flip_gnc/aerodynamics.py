@@ -6,6 +6,7 @@ and atmospheric boundary layer wind shear and discrete gust dynamics.
 """
 
 from dataclasses import dataclass
+from typing import Tuple
 import math
 
 
@@ -193,3 +194,127 @@ class AerodynamicModel:
             "alpha_deg": math.degrees(alpha),
             "heat_flux_w_m2": heat_flux,
         }
+
+
+@dataclass
+class AtmosphericState:
+    """
+    Thermodynamic state vector for atmospheric point.
+    """
+    altitude_m: float
+    temperature_k: float
+    pressure_pa: float
+    density_kg_m3: float
+    speed_of_sound_mps: float
+
+
+class StandardAtmosphere1976:
+    """
+    US Standard Atmosphere 1976 (USSA76) multi-layer barometric model.
+    Piecewise linear temperature gradient up to 51,000 meters altitude.
+    """
+
+    R_AIR = 287.05287            # Specific gas constant for air [J / (kg * K)]
+    GAMMA = 1.40                 # Adiabatic index for air
+    G0 = 9.80665                 # Gravitational acceleration [m/s^2]
+
+    # Layer base boundaries: (z_base_m, T_base_K, lapse_rate_K_per_m, P_base_Pa)
+    LAYERS = [
+        (0.0, 288.15, -0.0065, 101325.0),        # Troposphere
+        (11000.0, 216.65, 0.0, 22632.1),         # Tropopause (isothermal)
+        (20000.0, 216.65, 0.0010, 5474.89),      # Stratosphere 1
+        (32000.0, 228.65, 0.0028, 868.019),      # Stratosphere 2
+        (47000.0, 270.65, 0.0, 110.906),         # Stratopause
+    ]
+
+    def evaluate(self, altitude_m: float) -> AtmosphericState:
+        """
+        Calculates temperature, pressure, density, and sound velocity at geometric altitude.
+        """
+        z = max(0.0, min(51000.0, altitude_m))
+
+        # Identify layer:
+        z_base, t_base, lapse, p_base = self.LAYERS[0]
+        for layer in self.LAYERS:
+            if z >= layer[0]:
+                z_base, t_base, lapse, p_base = layer
+            else:
+                break
+
+        dz = z - z_base
+        if abs(lapse) < 1e-9:
+            # Isothermal layer:
+            temp = t_base
+            pressure = p_base * math.exp(-self.G0 * dz / (self.R_AIR * t_base))
+        else:
+            # Constant lapse rate layer:
+            temp = t_base + lapse * dz
+            exponent = -self.G0 / (lapse * self.R_AIR)
+            pressure = p_base * ((temp / t_base) ** exponent)
+
+        density = pressure / (self.R_AIR * temp)
+        sound_speed = math.sqrt(self.GAMMA * self.R_AIR * temp)
+
+        return AtmosphericState(
+            altitude_m=round(z, 2),
+            temperature_k=round(temp, 2),
+            pressure_pa=round(pressure, 2),
+            density_kg_m3=round(density, 5),
+            speed_of_sound_mps=round(sound_speed, 2),
+        )
+
+    def density(self, altitude_m: float) -> float:
+        """
+        Convenience density lookup compatible with standard Atmosphere interface.
+        """
+        return self.evaluate(altitude_m).density_kg_m3
+
+
+class RadiativeEquilibriumThermalModel:
+    """
+    Computes steady-state surface radiation equilibrium temperature for TPS tiles.
+    Stefan-Boltzmann radiation cooling balance: q_conv = epsilon * sigma * T_wall^4.
+    """
+
+    STEFAN_BOLTZMANN = 5.670374e-8  # W / (m^2 * K^4)
+
+    def __init__(self, surface_emissivity: float = 0.88):
+        self.emissivity = surface_emissivity
+
+    def compute_surface_temperature_k(self, convective_heat_flux_w_m2: float) -> float:
+        """
+        Solves for radiative equilibrium wall temperature in Kelvin.
+        """
+        q = max(0.0, convective_heat_flux_w_m2)
+        if q <= 0.0:
+            return 288.15  # Ambient baseline
+        t_wall = (q / (self.emissivity * self.STEFAN_BOLTZMANN)) ** 0.25
+        return round(t_wall, 2)
+
+
+@dataclass
+class DrydenTurbulenceModel:
+    """
+    Low-altitude continuous atmospheric turbulence generator based on Dryden spectra (MIL-HDBK-1797).
+    """
+    severity_intensity: str = "MODERATE"   # "LIGHT", "MODERATE", "SEVERE"
+    wind_speed_at_20ft_mps: float = 12.0
+
+    def compute_turbulence_intensity(self, altitude_m: float) -> Tuple[float, float, float]:
+        """
+        Computes Dryden scale lengths (Lu, Lw) and vertical/horizontal RMS intensities (sigma_u, sigma_w).
+        """
+        z = max(3.0, min(600.0, altitude_m))
+        # Low altitude MIL-F-8785C relations:
+        l_w = z
+        l_u = z / ((0.177 + 0.000823 * z) ** 1.2)
+
+        # Scale intensity with reference wind:
+        sigma_w = 0.1 * self.wind_speed_at_20ft_mps
+        if self.severity_intensity == "SEVERE":
+            sigma_w *= 2.0
+        elif self.severity_intensity == "LIGHT":
+            sigma_w *= 0.5
+
+        sigma_u = sigma_w / ((0.177 + 0.000823 * z) ** 0.4)
+        return l_u, l_w, round(sigma_u, 3)

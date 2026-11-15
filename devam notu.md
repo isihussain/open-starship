@@ -56,13 +56,13 @@ The suite models the primary physical, operational, and safety bottlenecks acros
 ```bash
 cd /Users/johndoe/.gemini/antigravity/scratch/open-starship
 
-# Run all 69 unit tests across the 4 packages:
+# Run all 99 unit tests across the 4 packages:
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-flip-gnc/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-cryo-slosh/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-tps-vision/tests
 PYTHONPATH="starship-flip-gnc:starship-cryo-slosh:starship-tps-vision:starship-geo-sat" python3 -m unittest discover -s starship-geo-sat/tests
 
-# Run the 7-phase end-to-end pipeline:
+# Run the 8-phase end-to-end pipeline with artifact validation:
 python3 run_pipeline.py pipeline_artifacts
 
 # Open the 5-tab mission control visualizer:

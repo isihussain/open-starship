@@ -241,32 +241,34 @@ class ActuatorFaultAllocator:
     @staticmethod
     def _solve_least_squares(b_cols: List[List[float]], target: List[float]) -> List[float]:
         """
-        Solves B * delta = target for minimum-norm delta using normal equations (B^T * B + lambda*I)^-1 * B^T * target.
+        Solves underdetermined control allocation B * delta = target for minimum control energy
+        using Moore-Penrose right pseudo-inverse: delta = B^T * (B * B^T + lambda * I)^-1 * target.
         """
-        # B has 3 rows and n cols: B[r][c] = b_cols[c][r]
         n = len(b_cols)
-        # Compute A = B^T * B (n x n)
-        a_mat = [[0.0] * n for _ in range(n)]
-        for i in range(n):
-            for j in range(n):
+        # B has 3 rows (pitch, yaw, roll) and n columns (active surfaces):
+        # Compute 3x3 matrix S = B * B^T:
+        s_mat = [[0.0] * 3 for _ in range(3)]
+        for r1 in range(3):
+            for r2 in range(3):
                 dot = 0.0
-                for r in range(3):
-                    dot += b_cols[i][r] * b_cols[j][r]
-                # Regularization (Tikhonov) to avoid singularity
-                if i == j:
-                    dot += 1e-4
-                a_mat[i][j] = dot
+                for c in range(n):
+                    dot += b_cols[c][r1] * b_cols[c][r2]
+                if r1 == r2:
+                    dot += 1e-4  # Tikhonov damping
+                s_mat[r1][r2] = dot
 
-        # Compute rhs = B^T * target (n)
-        rhs = [0.0] * n
-        for i in range(n):
+        # Solve S * w = target for w in R^3:
+        w = ActuatorFaultAllocator._gaussian_solve(s_mat, target)
+
+        # Compute delta = B^T * w (size n):
+        delta = [0.0] * n
+        for c in range(n):
             val = 0.0
             for r in range(3):
-                val += b_cols[i][r] * target[r]
-            rhs[i] = val
+                val += b_cols[c][r] * w[r]
+            delta[c] = val
 
-        # Solve A * x = rhs via Gaussian elimination
-        return ActuatorFaultAllocator._gaussian_solve(a_mat, rhs)
+        return delta
 
     @staticmethod
     def _gaussian_solve(a: List[List[float]], b: List[float]) -> List[float]:

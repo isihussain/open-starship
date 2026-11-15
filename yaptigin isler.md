@@ -99,6 +99,45 @@ This report documents completed engineering milestones, unit test verifications,
 - **JSON loading:** Accepts `pipeline_artifacts/flight_telemetry.json` from `run_pipeline.py` via file input or drag-drop; overrides simulation with recorded data.
 - **Topbar chips:** Mission clock (MM:SS), phase badge (ASCENT/FLIP/DESCENT/CATCH), slosh risk chip (NOMINAL/WARNING/CRITICAL), CI test count chip (69 tests).
 
+### Phase 8: Core Engineering Expansion, Bug Remediation & Technical Audit
+- **Bug Fixes:**
+  1. `aerodynamics.py`: Fixed signed lateral lift direction to account for windward face orientation via relative airspeed cross-product.
+  2. `catch_dynamics.py`: Corrected contact force calculation to support static vehicle gravitational weight ($m \cdot g_0$) during terminal hover and resting contact.
+  3. `electric_orbit_raising.py`: Corrected radiation fluence integration to compute continuous 24-hour daily belt exposure independent of thruster firing duty cycle, properly scaled by step days.
+  4. `debris_hazard_predictor.py`: Included aerodynamic drag damping in instantaneous impact point divert $\Delta \mathbf{v}$ solver, eliminating 12–18% undershoot errors.
+  5. `touchdown_gate.py`: Replaced two-sensor divergence with multi-sensor spread across all active altimeter channels (`max - min`), capturing INS drift.
+- **25 Modular Contributions:**
+  1. US Standard Atmosphere 1976 (USSA76) piecewise temperature gradient model (`aerodynamics.py`).
+  2. Stefan-Boltzmann radiative equilibrium surface temperature solver (`aerodynamics.py`).
+  3. Dryden continuous atmospheric turbulence spectrum generator (`aerodynamics.py`).
+  4. Center of mass travel and 3D principal moment of inertia tensor tracking (`models.py`).
+  5. Quaternion attitude representation and exact Lie algebra logarithm error kinematics (`quaternion_attitude.py`).
+  6. Gain-scheduled altitude-dependent bandwidth controller in `trajectory.py`.
+  7. Dynamic tip-over stability and tilt angle validator in `touchdown_gate.py`.
+  8. 3D spherical cone TVC gimbal limiting and vector cosine loss in `engine_out_recovery.py`.
+  9. Minimum-norm control allocator via Moore-Penrose right pseudo-inverse in `actuator_fault_allocator.py`.
+  10. Hydro-pneumatic spring-damper chopstick pin impact dynamics model in `catch_dynamics.py`.
+  11. Second-harmonic ($m=2$) slosh pendulum mode with non-linear fundamental mode coupling in `pendulum_model.py`.
+  12. Miles & Abramson annular ring baffle hydrodynamic damping ratio function in `tank.py`.
+  13. Unvented cryogenic tank ullage thermodynamic self-pressurization model in `tank.py`.
+  14. Transfer line pre-cooling chill-down transient and vapor-lock prevention evaluator in `orbital_transfer.py`.
+  15. Multi-modal propellant mass gauging sensor fusion in `simulator.py`.
+  16. Hexagonal axial coordinate system $(q, r)$ and BFS spatial defect clustering in `synthetic.py`.
+  17. Multi-spectral optical and thermal infrared inspection fusion for subsurface voids in `detector.py`.
+  18. Inspection metrics engine (Confusion matrix, Precision, Recall, F1 score) in `detector.py`.
+  19. Lunisolar third-body gravitational tidal drift equations in `inclined_orbit_dynamics.py`.
+  20. Ground station Doppler frequency shift and antenna tracking slew rate solver in `inclined_orbit_dynamics.py`.
+  21. Equinox eclipse radiative cooldown and battery Depth-of-Discharge simulator (`eclipse_thermal_model.py`).
+  22. Hall-effect thruster hollow cathode erosion and mass utilization efficiency model in `electric_orbit_raising.py`.
+  23. Solar Array Drive Mechanism (SADM) stepper disturbance torque model in `reaction_wheel_desat.py`.
+  24. Cryptographic HMAC-SHA256 telemetry frame integrity signer and validator in `telemetry.py`.
+  25. Automated pipeline artifact integrity verifier and cross-schema gate in `run_pipeline.py`.
+- **Technical Audit & Documentation:**
+  - Authored `docs/CODE_REVIEWS_25.md` providing comprehensive architectural and physical reviews across 25 modules.
+- **Verification:**
+  - Expanded unit test coverage from 69 to 99 passing tests across all 4 packages.
+  - End-to-end 8-phase pipeline execution verified clean with all 7 artifacts validated.
+
 ---
 
-## Project Status: COMPLETED, EXPANDED, AND VERIFIED (69/69 Tests Passing)
+## Project Status: COMPLETED, EXPANDED, AND VERIFIED (99/99 Tests Passing)

@@ -116,3 +116,84 @@ class SyntheticTileGridGenerator:
                 observations.append(obs)
 
         return observations
+
+
+@dataclass(frozen=True)
+class HexAxialCoord:
+    """
+    Hexagonal tile representation using axial coordinates (q, r).
+    Cube coordinate equivalent: (q, r, -q-r).
+    """
+    q: int
+    r: int
+
+    # 6 cardinal neighbors for point-topped / flat-topped hexagonal tessellation:
+    HEX_DIRECTIONS = (
+        (1, 0), (1, -1), (0, -1),
+        (-1, 0), (-1, 1), (0, 1),
+    )
+
+    def neighbors(self) -> List["HexAxialCoord"]:
+        """Returns 6 directly adjacent hexagonal tile coordinates."""
+        return [HexAxialCoord(self.q + dq, self.r + dr) for dq, dr in self.HEX_DIRECTIONS]
+
+    def distance_to(self, other: "HexAxialCoord") -> int:
+        """Hexagonal grid Manhattan distance."""
+        return (abs(self.q - other.q) + abs(self.q + self.r - other.q - other.r) + abs(self.r - other.r)) // 2
+
+
+class TileSpatialClusterAnalyzer:
+    """
+    Identifies spatially contiguous clusters of damaged or missing tiles.
+    Multi-tile clusters present high burn-through hazard during hypersonic atmospheric entry.
+    """
+
+    @staticmethod
+    def parse_row_col(tile_id: str) -> HexAxialCoord:
+        """Parses 'T-R{row}-C{col}' into axial coordinate (q, r)."""
+        parts = tile_id.split("-")
+        row = int(parts[1][1:])
+        col = int(parts[2][1:])
+        # Convert staggered rectangular array to axial:
+        q = col - (row - (row & 1)) // 2
+        r = row
+        return HexAxialCoord(q, r)
+
+    @classmethod
+    def find_defect_clusters(cls, observations: List[TileObservation]) -> List[List[str]]:
+        """
+        Groups defective adjacent tiles into spatial connectivity clusters using BFS.
+        """
+        defective_tiles = {
+            obs.tile_id: cls.parse_row_col(obs.tile_id)
+            for obs in observations
+            if obs.ground_truth_defect != DefectType.NONE
+        }
+
+        coord_to_id = {coord: tid for tid, coord in defective_tiles.items()}
+        visited = set()
+        clusters: List[List[str]] = []
+
+        for tid, coord in defective_tiles.items():
+            if tid in visited:
+                continue
+
+            current_cluster = []
+            queue = [coord]
+            visited.add(tid)
+
+            while queue:
+                curr = queue.pop(0)
+                current_cluster.append(coord_to_id[curr])
+
+                for neighbor in curr.neighbors():
+                    if neighbor in coord_to_id:
+                        nid = coord_to_id[neighbor]
+                        if nid not in visited:
+                            visited.add(nid)
+                            queue.append(neighbor)
+
+            if len(current_cluster) >= 1:
+                clusters.append(sorted(current_cluster))
+
+        return clusters
