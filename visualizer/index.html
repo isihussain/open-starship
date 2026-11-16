@@ -788,6 +788,7 @@
           <button class="btn-fault" id="btn-inj-rain">🌧 Ka-Band Rain Fade</button>
           <button class="btn-fault" id="btn-inj-arc">⚡ Solar Array Arc</button>
           <button class="btn-fault" id="btn-inj-debris">☄ Hypervelocity Strike</button>
+          <button class="btn-fault" id="btn-inj-los">📡 Total Antenna Blackout</button>
           <button class="btn-fault reset" id="btn-inj-reset">🔄 Restore All Systems</button>
         </div>
       </div>
@@ -1826,6 +1827,20 @@ if (el('btn-inj-engine')) {
     injDetail.textContent = 'Impact kinetic energy 147.8 kJ pierced 10.7mm into bus. Primary telemetry lost. SPOT-6 twin took over imagery tasks.';
     injPower.textContent = '0.0% (Power Bus Line Severed)';
     injPower.className = 'hud-val crit';
+  });
+
+  el('btn-inj-los').addEventListener('click', () => {
+    clearFaultButtons();
+    el('btn-inj-los').classList.add('active');
+    injName.textContent = 'TOTAL RF ANTENNA LOSS (PRIMARY & BACKUP)';
+    injName.className = 'hud-val crit';
+    injAction.textContent = 'AUTONOMOUS INS FLIGHT (AFTS ARMED)';
+    injAction.className = 'hud-val sky';
+    injSeverity.textContent = 'AUTONOMOUS MODE (NO GROUND RF)';
+    injSeverity.className = 'hud-val warn';
+    injDetail.textContent = 'Watchdog timeout elapsed. Ground lockout engaged. Closed-loop INS steering nominal to orbit. Autonomous payload deployment primed.';
+    injLink.textContent = '-99.0 dB (RF Outage)';
+    injLink.className = 'hud-val crit';
   });
 
   el('btn-inj-reset').addEventListener('click', () => {

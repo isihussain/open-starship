@@ -113,6 +113,11 @@ from starship_geo_sat.station_keeping_prognostics import (
     StationKeepingPrognosticator,
     StationKeepingConfig,
 )
+from starship_geo_sat.loss_of_signal_contingency import (
+    LossOfSignalContingencyController,
+    AntennaTelemetry,
+    AscentInertialState,
+)
 
 
 def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
@@ -508,6 +513,30 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     sk_report = sk_prog.forecast_mission_lifetime()
     sk_budget = sk_prog.compute_annual_budget()
 
+    # K. Loss-of-Signal (LOS) Autonomous Flight Control & Satellite Deployment
+    los_controller = LossOfSignalContingencyController()
+    los_eval = los_controller.evaluate(
+        rf=AntennaTelemetry(
+            timestamp_s=525.0,
+            primary_rf_active=False,
+            secondary_rf_active=False,
+            primary_snr_db=-99.0,
+            secondary_snr_db=-99.0,
+            last_uplink_heartbeat_s=480.0,
+        ),
+        state=AscentInertialState(
+            timestamp_s=525.0,
+            altitude_m=185_000.0,
+            downrange_km=1420.0,
+            crossrange_km=2.1,
+            inertial_velocity_mps=7825.0,
+            axial_acceleration_mps2=0.0,
+            attitude_pitch_deg=0.0,
+            attitude_yaw_rate_deg_s=0.02,
+        ),
+        post_sep_elapsed_s=920.0,
+    )
+
     geo_summary = {
         "launch_abort_detector": {
             "nominal_thrust": abort_eval.nominal_thrust,
@@ -596,6 +625,21 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
             "annual_propellant_consumption_kg": sk_budget.annual_propellant_consumption_kg,
             "eol_status": sk_report.eol_status,
         },
+        "loss_of_signal_contingency": {
+            "loss_of_signal_confirmed": los_eval.loss_of_signal_confirmed,
+            "uplink_outage_duration_s": los_eval.uplink_outage_duration_s,
+            "flight_mode": los_eval.flight_mode,
+            "afts_corridor_cleared": los_eval.afts_corridor_cleared,
+            "afts_flight_termination_commanded": los_eval.afts_flight_termination_commanded,
+            "ground_command_lockout_active": los_eval.ground_command_lockout_active,
+            "orbital_insertion_verified": los_eval.orbital_insertion_verified,
+            "specific_orbital_energy_mj_kg": los_eval.specific_orbital_energy_mj_kg,
+            "payload_separation_commanded": los_eval.payload_separation_commanded,
+            "satellite_microswitch_tripped": los_eval.satellite_microswitch_tripped,
+            "satellite_solar_arrays_deployed": los_eval.satellite_solar_arrays_deployed,
+            "satellite_rf_carrier_active": los_eval.satellite_rf_carrier_active,
+            "status_message": los_eval.status_message,
+        },
     }
 
     geo_json_path = out_path / "geo_satellite_validation.json"
@@ -612,6 +656,7 @@ def run_pipeline(output_dir: str = "pipeline_artifacts") -> None:
     print(f"      -> Hotbird 13°E Co-location: Min Clearance={hb_colocation.minimum_radial_normal_distance_km:.1f} km (Safe: {hb_colocation.safe_stationkeeping_clearance}, EGNOS SBAS: {hb_migration.egnos_geo4_sbas_active})")
     print(f"      -> Optical ISL Cross-Link: Range={isl_report.link_distance_km:.0f} km, Margin=+{isl_report.link_margin_db:.1f} dB (Status: {isl_report.link_status}, Doppler: {isl_report.doppler_frequency_shift_ghz:.2f} GHz)")
     print(f"      -> Station-Keeping Prognosis: {sk_report.slot_longitude_deg:.1f}°E (Remaining Life: {sk_report.remaining_lifetime_years:.1f} yrs, Usable Fuel: {sk_report.usable_propellant_kg:.1f} kg, EOL: {sk_report.eol_status})")
+    print(f"      -> LOS Blackout Controller: {los_eval.flight_mode} (Orbit Inserted: {los_eval.orbital_insertion_verified}, Payload Safe: {los_eval.satellite_rf_carrier_active})")
     print(f"      -> Geostationary & Fleet Validation Saved: {geo_json_path}")
 
     # Phase 8: Pipeline Artifact Verification & Schema Integrity Gate

@@ -84,6 +84,13 @@ from .station_keeping_prognostics import (
     StationKeepingBudget,
     LifetimePrognosisReport,
 )
+from .loss_of_signal_contingency import (
+    LossOfSignalContingencyController,
+    AntennaTelemetry,
+    AscentInertialState,
+    AFTSCorridorLimits,
+    ContingencyAssessment,
+)
 
 __all__ = [
     "LaunchAbortDetector",
@@ -132,4 +139,9 @@ __all__ = [
     "TankPVTReading",
     "StationKeepingBudget",
     "LifetimePrognosisReport",
+    "LossOfSignalContingencyController",
+    "AntennaTelemetry",
+    "AscentInertialState",
+    "AFTSCorridorLimits",
+    "ContingencyAssessment",
 ]
