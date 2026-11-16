@@ -57,6 +57,14 @@ from .lunar_hls_landing import (
     PlumeErosionReport,
     EjectaRiskAssessment,
 )
+from .mars_entry_aerocapture import (
+    MarsAtmosphere,
+    MarsEntryCorridor,
+    MarsEntryState,
+    SRPHandoverCriteria,
+    MarsTrajectoryProfile,
+    MarsEntryAerocaptureSolver,
+)
 
 __all__ = [
     "StarshipVehicle",
@@ -107,4 +115,10 @@ __all__ = [
     "LunarLandingState",
     "PlumeErosionReport",
     "EjectaRiskAssessment",
+    "MarsAtmosphere",
+    "MarsEntryCorridor",
+    "MarsEntryState",
+    "SRPHandoverCriteria",
+    "MarsTrajectoryProfile",
+    "MarsEntryAerocaptureSolver",
 ]
