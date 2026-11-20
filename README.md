@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/isihussain/open-starship/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/isihussain/open-starship/ci.yml?branch=main&style=for-the-badge&logo=github-actions&logoColor=white&label=CI%20BUILD" alt="CI"></a>
   <a href="https://isihussain.github.io/open-starship/"><img src="https://img.shields.io/badge/LIVE%20DEMO-3D%20VISUALIZER-38bdf8?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Live Demo"></a>
-  <a href="https://github.com/isihussain/open-starship"><img src="https://img.shields.io/badge/TESTS-142%20PASSED-22c55e?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests"></a>
+  <a href="https://github.com/isihussain/open-starship"><img src="https://img.shields.io/badge/TESTS-168%20PASSED-22c55e?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests"></a>
   <a href="https://www.python.org"><img src="https://img.shields.io/badge/PYTHON-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-38bdf8?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
   <a href="https://github.com/isihussain/oxide-compiler"><img src="https://img.shields.io/badge/VERIFIED%20BY-OXIDE%20C%2B%2B20-f97316?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="Oxide"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-6366f1?style=for-the-badge" alt="License"></a>
@@ -216,6 +216,8 @@ The launch vehicle safety subsystem incorporates mitigations derived from real-w
 | `🟢 ACTIVE` | [**`actuator_fault_allocator.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc/starship_flip_gnc/actuator_fault_allocator.py) | **i-Space Hyperbola-1 Y5**<br>*(August 2021)* | Grid-fin hinge jammed from detached thermal insulation; flight software failed to reallocate control moments, resulting in attitude departure and breakup. | Detects actuator motor stall current saturation ($I \ge 40\text{ A}$) with tracking divergence, freezes the failed surface, subtracts its parasitic aerodynamic torque, and solves a pseudo-inverse reallocation across active flaps and RCS. |
 | `🟢 ACTIVE` | [**`engine_out_recovery.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc/starship_flip_gnc/engine_out_recovery.py) | **LandSpace Zhuque-2**<br>*(Multi-engine stages)* | Single engine flameout causes asymmetric pitching/yawing moments and insufficient descent deceleration. | Computes TVC gimbal trim angles to route the net thrust vector through the vehicle center of mass, throttles operational engines up, and reshapes burn duration using the rocket equation. |
 | `🟢 ACTIVE` | [**`debris_hazard_predictor.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc/starship_flip_gnc/debris_hazard_predictor.py) | **CNSA Long March**<br>*(Inland corridors)* | Spent first stages and boosters dropping uncontrolled into inhabited inland villages. | Computes real-time vacuum and drag-retarded Instantaneous Impact Points (IIP), evaluates 3-sigma dispersion bounds against population geofences, and calculates corrective divert velocity vectors ($\Delta \mathbf{v}_{\text{divert}}$) or AFTS triggers. |
+| `🟢 ACTIVE` | [**`mars_entry_aerocapture.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-flip-gnc/starship_flip_gnc/mars_entry_aerocapture.py) | **Martian Interplanetary Arrival**<br>*(7.4 km/s Direct Entry)* | Direct hyperbolic arrival into thin CO2 atmosphere risking either atmospheric skip-out or excessive aerothermal deceleration. | Solves 3-DoF entry dynamics across $\gamma \in [-16.5^\circ, -11.5^\circ]$ corridors, calculates Tauber-Sutton CO2 convective heat fluxes, and commands supersonic retro-propulsion (SRP) handover at Mach 2.5 to 5.0. |
+| `🟢 ACTIVE` | [**`loss_of_signal_contingency.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/loss_of_signal_contingency.py) | **Ascent Communications Blackout**<br>*(Antenna Hardware Failure)* | Primary and backup radio antennas fail during ascent, cutting off ground telecommand and telemetry streams. | Enforces RF watchdog timeout, locks out external RF commands, maintains closed-loop INS guidance to orbital insertion ($v \ge 7750\text{ m/s}$), evaluates AFTS corridors onboard, and executes autonomous satellite release. |
 
 ---
 
@@ -233,6 +235,8 @@ The `starship-geo-sat` package solves operational, orbital mechanics, and space 
 | **Azerspace-1 & Azerspace-2** | **Dual Slot 0.9° Proximity** *(46.0°E & 45.1°E, 2013/2018)* | Ground dish beamwidths (1.2m to 2.4m) exceed the 0.9° angular separation, creating high Adjacent Satellite Interference (ASI) and self-jamming on co-frequency transponders. | [**`azercosmos_orbital_coordination.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/azercosmos_orbital_coordination.py): Calculates ITU-R S.580 off-axis antenna sidelobe roll-off, evaluates $(C/I)_{\text{ASI}}$ link degradation, selects DVB-S2X adaptive coding and modulation (ACM), and executes failover between Absheron Main Teleport and Nakhchivan Reserve Teleport. |
 | **AzerSky (SPOT 7)** | **Sun-Synchronous LEO Anomaly** *(694.9 km, March 2023)* | Telemetry and command links ceased suddenly on March 17, 2023. US Space Surveillance Network tracked the satellite intact, indicating hypervelocity micro-debris severed the main power bus without explosive hull breakup. | [**`azersky_debris_conjunction.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/azersky_debris_conjunction.py): Evaluates kinetic impact energy ($E_k = \frac{1}{2} m v^2$), solves Cour-Palais penetration depth in aluminum bus skin, estimates post-impact tumbling rate ($\boldsymbol{\omega}_{\text{tumble}}$), and commands Earth observation continuity fallback to twin SPOT-6 imagery. |
 | **Hotbird 1 to 13G** | **13.0°E Multi-Satellite Co-location** *(1995–Present)* | 3 to 5 heavy spacecraft co-located within a single $\pm 0.05^\circ$ station-keeping box, creating high intra-slot conjunction risk and thruster plume optical sensor blinding. | [**`hotbird_fleet_operations.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/hotbird_fleet_operations.py): Coordinates parallel/anti-parallel Eccentricity/Inclination ($e/i$) separation vectors guaranteeing $> 15\text{ km}$ clearance across 24h, solves Hot Bird 3 post-eclipse $+19.1\text{ K/min}$ thermal shock arcing, models Hot Bird 7 Vulcain 2 launch abort, and manages Eurostar Neo zero-downtime transponder migration with EGNOS GEO-4 SBAS. |
+| **Optical Crosslink Networks** | **Inter-Satellite Laser Comms** *(1550 nm EDFA)* | High data-rate inter-satellite communications subject to pointing jitter attenuation and multi-GHz Doppler frequency shifts. | [**`optical_isl_crosslink.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/optical_isl_crosslink.py): Evaluates 2.5 Gbps laser link budgets across $4500\text{ km}$, models fine-steering mirror (FSM) sub-microradian jitter rejection, and calculates dynamic Doppler offset corrections. |
+| **Long-Life GEO Fleet** | **Station-Keeping Prognostics** *(42.0°E / Long Duration)* | Propellant exhaustion risks leaving spent spacecraft in active GEO slots without sufficient delta-V for IADC graveyard disposal. | [**`station_keeping_prognostics.py`**](file:///Users/johndoe/.gemini/antigravity/scratch/open-starship/starship-geo-sat/starship_geo_sat/station_keeping_prognostics.py): Computes coupled North-South and East-West annual burn budgets ($~50\text{ m/s/yr}$), models PVT helium ullage gas propellant gauging, and verifies graveyard reserves ($+235\text{ km}$). |
 
 ---
 
@@ -440,6 +444,7 @@ open-starship/
 │   │   ├── aerodynamics.py             # Drag, lift, atmospheric density, aerothermal flux
 │   │   ├── atmospheric_entry.py        # 120 km -> 15 km entry corridor, Sutton-Graves, plasma cutoff
 │   │   ├── lunar_hls_landing.py        # Lunar vacuum descent, regolith erosion PSI & TRN gate
+│   │   ├── mars_entry_aerocapture.py   # Mars direct entry, CO2 aerocapture corridor & SRP handover
 │   │   ├── quaternion_attitude.py      # Quaternion 3D kinematics & Lie logarithm error
 │   │   ├── trajectory.py               # 3-phase landing flip trajectory solver (RK4)
 │   │   ├── catch_dynamics.py           # Mechazilla chopstick tower capture solver
@@ -449,14 +454,22 @@ open-starship/
 │   │   ├── engine_out_recovery.py      # Asymmetric engine-out gimbal & burn reshaper (Zhuque-2)
 │   │   ├── debris_hazard_predictor.py  # Instantaneous impact point & geofence monitor
 │   │   ├── telemetry.py                # Flight telemetry logger and schema exporter
+│   │   ├── cli.py                      # starship-flip command-line interface
 │   │   └── native_bridge.py            # Python C-ABI FFI wrapper
 │   ├── native/              # Freestanding C99 core (starship_core.c)
-│   └── tests/               # Unit test suite (66 tests)
+│   └── tests/               # Unit test suite (73 tests)
 ├── starship-cryo-slosh/     # Cryogenic propellant slosh & orbital transfer simulator
 │   ├── starship_cryo_slosh/ # Tank geometry, pendulum model, simulator, orbital transfer
-│   └── tests/               # Unit test suite (16 tests)
+│   │   ├── models.py                   # Fluid properties (LOX/CH4), header tank geometry
+│   │   ├── pendulum_model.py           # Nonlinear spherical pendulum slosh equations
+│   │   ├── tank.py                     # Annular ring baffles and ullage collapse modeling
+│   │   ├── simulator.py                # Coupled 6-DoF rigid-body fluid slosh solver
+│   │   ├── orbital_transfer.py         # In-space microgravity tanker-to-depot transfer
+│   │   ├── cryo_boiloff_tvs.py         # MLI boiloff & Thermodynamic Vent System (TVS)
+│   │   └── cli.py                      # starship-slosh command-line interface
+│   └── tests/               # Unit test suite (23 tests)
 ├── starship-tps-vision/     # TPS heat shield tile defect detection & work order pipeline
-│   ├── starship_tps_vision/ # Risk map, synthetic generator, detector, reporter
+│   ├── starship_tps_vision/ # Risk map, synthetic generator, detector, reporter, cli.py
 │   └── tests/               # Unit test suite (11 tests)
 ├── starship-geo-sat/        # Satellite fleet operations (Türksat, Azercosmos & Hotbird)
 │   ├── starship_geo_sat/    # Abort, inclined orbit, EOR, desat, RFI guard, ASI, debris, Hotbird co-location
@@ -470,8 +483,10 @@ open-starship/
 │   │   ├── azersky_debris_conjunction.py   # LEO hypervelocity micro-debris collision (AzerSky)
 │   │   ├── hotbird_fleet_operations.py     # 13°E multi-satellite co-location & Eurostar Neo migration
 │   │   ├── optical_isl_crosslink.py        # 1550nm laser inter-satellite crosslink & PAT tracking
-│   │   └── station_keeping_prognostics.py  # J22 EWSK, PVT gauging & IADC graveyard disposal
-│   └── tests/               # Unit test suite (49 tests)
+│   │   ├── station_keeping_prognostics.py  # J22 EWSK, PVT gauging & IADC graveyard disposal
+│   │   ├── loss_of_signal_contingency.py   # Loss-of-Signal autonomous INS flight & satellite release
+│   │   └── cli.py                          # starship-geo command-line interface
+│   └── tests/               # Unit test suite (61 tests)
 ├── visualizer/              # Standalone 6-tab 3D Three.js flight & satellite cockpit
 │   └── index.html           # Interactive real-time 3D telemetry, tank cutaway & fault injector
 ├── run_pipeline.py          # 8-phase end-to-end orchestration runner with artifact validation
@@ -495,7 +510,7 @@ cd open-starship
 # Run the complete 8-phase pipeline
 python3 run_pipeline.py pipeline_artifacts
 
-# Run all 142 unit tests across all four packages
+# Run all 168 unit tests across all four packages
 (cd starship-flip-gnc && python3 -m unittest discover -s tests)
 (cd starship-cryo-slosh && python3 -m unittest discover -s tests)
 (cd starship-tps-vision && python3 -m unittest discover -s tests)

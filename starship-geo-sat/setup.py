@@ -7,4 +7,9 @@ setup(
     author="isihussain",
     packages=find_packages(),
     python_requires=">=3.9",
+    entry_points={
+        "console_scripts": [
+            "starship-geo=starship_geo_sat.cli:main",
+        ],
+    },
 )
